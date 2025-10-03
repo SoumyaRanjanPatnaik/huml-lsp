@@ -1,10 +1,14 @@
-use huml_lsp::rpc::decode_from_buffer_rpc;
+use huml_lsp::{
+    lsp::{request::Request, server::Server},
+    rpc::{RPCMessageStream, jsonrpc_decode, jsonrpc_encode},
+};
 use serde_json::Value;
 use std::{
     env,
     error::Error,
     fs::File,
     io::{self, Write},
+    panic,
 };
 
 fn build_logger() -> impl FnMut(&str) -> () {
@@ -18,19 +22,56 @@ fn build_logger() -> impl FnMut(&str) -> () {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut stdin_reader = io::stdin().lock();
-    let mut read_buf = Vec::new();
     let mut log = build_logger();
+    let server = Server::new();
 
-    loop {
-        log("waiting for request");
-        let value: Value = match decode_from_buffer_rpc(&mut stdin_reader, &mut read_buf) {
-            Ok(val) => val,
-            Err(e) => panic!("Invalid data format {e}"),
+    let stdin_reader = io::stdin().lock();
+    let rpc_reader = RPCMessageStream::new(stdin_reader);
+
+    let mut stdout_writer = io::stdout().lock();
+
+    log("Started Server. Waiting for Messages...");
+    for message_result in rpc_reader {
+        // Debug logging to inspect requests
+        #[cfg(debug_assertions)]
+        {
+            let message_json = &message_result
+                .as_ref()
+                .map(|msg| {
+                    let json_value = jsonrpc_decode::<Value>(msg).unwrap();
+                    serde_json::to_string_pretty(&json_value).unwrap()
+                })
+                .unwrap();
+            // Log the message for inspection
+            log(&format!("Message: {message_json}",));
+        }
+
+        // Parse / recieve the message
+        let message: Request = match message_result.map(|msg| jsonrpc_decode(&msg)) {
+            Ok(Ok(msg)) => msg,
+            Err(decode_err) | Ok(Err(decode_err)) => {
+                log(&format!("Error parsing message: {decode_err}"));
+                panic!("Failed to parse message");
+            }
         };
 
-        log("Recieved request");
-        let json = serde_json::to_string_pretty(&value).expect("Serialization failed");
-        log(&json);
+        // Hanndle the request
+        let response = match server
+            .handle_request(message)
+            .map(|msg| jsonrpc_encode(&msg))
+        {
+            Ok(Ok(res)) => res,
+            Err(e) => {
+                log(&format!("Failed to handle request: {e}"));
+                panic!("Request Handlingg Error: {e}")
+            }
+            Ok(Err(e)) => {
+                log(&format!("Failed to encode response: {e}"));
+                panic!("Response encoding faileed: {e}")
+            }
+        };
+
+        let _ = stdout_writer.write_all(response.as_ref());
     }
+    Ok(())
 }
