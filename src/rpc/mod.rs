@@ -1,9 +1,9 @@
-mod buffer;
 mod coding;
 mod error;
+mod stream;
 mod types;
 
-pub use buffer::*;
 pub use coding::*;
 pub use error::*;
+pub use stream::*;
 pub use types::*;
