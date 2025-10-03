@@ -1,4 +1,4 @@
-mod initialize;
+pub mod initialize;
 
 use crate::{
     lsp::{request::Request, response::initialize::InitializeResult},
@@ -49,6 +49,18 @@ pub enum ResponsePayload {
         message: String,
         data: Option<LSPAny>,
     },
+}
+
+impl From<ResponseResult> for ResponsePayload {
+    fn from(v: ResponseResult) -> Self {
+        Self::Result(v)
+    }
+}
+
+impl From<InitializeResult> for ResponsePayload {
+    fn from(v: InitializeResult) -> Self {
+        Self::Result(ResponseResult::Initialize(v))
+    }
 }
 
 #[derive(Serialize, Debug)]

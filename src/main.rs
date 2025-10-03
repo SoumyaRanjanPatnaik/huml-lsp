@@ -23,7 +23,7 @@ fn build_logger() -> impl FnMut(&str) -> () {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut log = build_logger();
-    let server = Server::new();
+    let mut server = Server::new();
 
     let stdin_reader = io::stdin().lock();
     let rpc_reader = RPCMessageStream::new(stdin_reader);

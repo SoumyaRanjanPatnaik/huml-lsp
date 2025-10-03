@@ -1,5 +1,13 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-#[error("An unknown error occurred when handling the error")]
-pub struct ServerError;
+pub enum ServerError {
+    #[error("Failed to initialize server")]
+    Initialize(#[from] InitializeError),
+}
+
+#[derive(Error, Debug)]
+pub enum InitializeError {
+    #[error("Server already initialized")]
+    AlreadyInitialized,
+}
