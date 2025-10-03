@@ -80,7 +80,6 @@ where
         let message = str::from_utf8(&self.read_buffer[..message_end_index].as_ref())
             .expect("Invalid Message Format - Conversion to utf8 failed");
 
-        println!("{message}");
         Ok(message)
     }
 }
