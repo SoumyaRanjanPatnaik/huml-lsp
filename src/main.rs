@@ -49,7 +49,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Parse / recieve the message
         let message: Request = match message_result.map(|msg| jsonrpc_decode(&msg)) {
             Ok(Ok(msg)) => msg,
-            Err(decode_err) | Ok(Err(decode_err)) => {
+            Ok(Err(_)) => continue,
+            Err(decode_err) => {
                 log(&format!("Error parsing message: {decode_err}"));
                 panic!("Failed to parse message");
             }
@@ -71,7 +72,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         };
 
-        let _ = stdout_writer.write_all(response.as_ref());
+        stdout_writer.write_all(response.as_ref())?;
+        stdout_writer.flush()?;
+        log(response.as_ref());
     }
     Ok(())
 }
