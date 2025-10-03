@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::rpc::DecodeError;
+use crate::rpc::{DecodeError, EncodeError};
 
 pub const RPC_HEADER_PREFIX: &str = "Content-Length: ";
 pub const RPC_HEADER_LEN: usize = RPC_HEADER_PREFIX.len();
@@ -9,9 +9,7 @@ pub const RPC_HEADER_LEN: usize = RPC_HEADER_PREFIX.len();
 /// in the LSP specification
 ///
 /// SEE [BASE_PROTOCOL](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#baseProtocol)
-pub fn jsonrpc_encode<DType: Serialize>(
-    data: &DType,
-) -> Result<String, Box<dyn std::error::Error>> {
+pub fn jsonrpc_encode<DType: Serialize>(data: &DType) -> Result<String, EncodeError> {
     let json = serde_json::to_string(data)?;
     let content_length = json.len();
 
