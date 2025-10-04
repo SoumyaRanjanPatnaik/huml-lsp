@@ -1,5 +1,5 @@
 use huml_lsp::{
-    lsp::{recieved_message::RecievedMessage, request::Request, server::Server},
+    lsp::{recieved_message::RecievedMessage, server::Server},
     rpc::{RPCMessageStream, jsonrpc_decode, jsonrpc_encode},
 };
 use serde_json::Value;
@@ -58,7 +58,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let response = match message {
             RecievedMessage::Request(req) => server.handle_request(req),
-            RecievedMessage::Notification(_) => unimplemented!("Notifications not yet supported"),
+            RecievedMessage::Notification(notification) => {
+                server.handle_notification(notification)?;
+                continue;
+            }
         };
 
         // Hanndle the request
