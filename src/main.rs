@@ -1,5 +1,5 @@
 use huml_lsp::{
-    lsp::{request::Request, server::Server},
+    lsp::{recieved_message::RecievedMessage, request::Request, server::Server},
     rpc::{RPCMessageStream, jsonrpc_decode, jsonrpc_encode},
 };
 use serde_json::Value;
@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // Parse / recieve the message
-        let message: Request = match message_result.map(|msg| jsonrpc_decode(&msg)) {
+        let message: RecievedMessage = match message_result.map(|msg| jsonrpc_decode(&msg)) {
             Ok(Ok(msg)) => msg,
             Ok(Err(_)) => continue,
             Err(decode_err) => {
@@ -56,11 +56,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         };
 
+        let response = match message {
+            RecievedMessage::Request(req) => server.handle_request(req),
+            RecievedMessage::Notification(_) => unimplemented!("Notifications not yet supported"),
+        };
+
         // Hanndle the request
-        let response = match server
-            .handle_request(message)
-            .map(|msg| jsonrpc_encode(&msg))
-        {
+        let encoded_response = match response.map(|msg| jsonrpc_encode(&msg)) {
             Ok(Ok(res)) => res,
             Err(e) => {
                 log(&format!("Failed to handle request: {e}"));
@@ -72,9 +74,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         };
 
-        stdout_writer.write_all(response.as_ref())?;
+        log(encoded_response.as_ref());
+
+        stdout_writer.write_all(encoded_response.as_ref())?;
         stdout_writer.flush()?;
-        log(response.as_ref());
     }
     Ok(())
 }
