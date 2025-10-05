@@ -2,7 +2,7 @@ use crate::lsp::{
     error::ServerError,
     notification::Notification,
     request::{ClientCapabilities, InitializeParams, Request, RequestMethods},
-    response::{ResponseMessage, ResponsePayload, initialize::InitializeResult},
+    response::{ResponseMessage, ResponsePayload, ResponseResult, initialize::InitializeResult},
 };
 
 #[derive(Debug)]
@@ -12,6 +12,7 @@ pub enum Server {
         client_capabilities: ClientCapabilities,
         is_client_initialized: bool,
     },
+    Shutdown,
 }
 
 impl Server {
@@ -36,6 +37,11 @@ impl Server {
         InitializeResult::default().into()
     }
 
+    fn handle_shutdown_req(&mut self) -> ResponsePayload {
+        *self = Server::Shutdown;
+        ResponsePayload::Result(ResponseResult::Shutdown)
+    }
+
     fn handle_initialized_notification(&mut self) {
         match self {
             Server::Uninitialized => panic!(
@@ -45,12 +51,14 @@ impl Server {
                 is_client_initialized,
                 ..
             } => *is_client_initialized = false,
+            _ => (),
         }
     }
 
     pub fn handle_request(&mut self, req: Request) -> Result<ResponseMessage, ServerError> {
         let response_payload = match req.method() {
             RequestMethods::Initialize(params) => self.handle_initialize_req(params),
+            RequestMethods::Shutdown => self.handle_shutdown_req(),
         };
         Ok(ResponseMessage::new_for(req, response_payload))
     }
@@ -65,11 +73,14 @@ impl Server {
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use serde_json::json;
 
     use crate::lsp::{
-        response::{ResponsePayload, ResponseResult, initialize::InitializeResult},
-        server::Server,
+        request::ClientCapabilities,
+        response::{
+            ResponseMessage, ResponsePayload, ResponseResult, initialize::InitializeResult,
+        },
     };
 
     #[test]
@@ -80,12 +91,12 @@ mod test {
             "method": "initialize",
             "params": {
                 "capabilities": {}
-            }
+            },
+            "jsonrpc": "2.0"
         }))
         .unwrap();
         let response = server.handle_request(request).unwrap();
         match server {
-            Server::Uninitialized => assert!(false, "Expected the server to be initialized"),
             Server::Initialized {
                 client_capabilities,
                 is_client_initialized,
@@ -101,6 +112,7 @@ mod test {
                     "Expected client_capabilities to match the value passed in the request"
                 )
             }
+            _ => assert!(false, "Expected the server to be initialized"),
         }
 
         assert_eq!(
@@ -116,5 +128,38 @@ mod test {
             ),
             "Expected response to contain an initialize result"
         );
+    }
+
+    #[test]
+    fn test_shutdown() {
+        let request = serde_json::from_value(json!({
+            "id": 2,
+            "method": "shutdown",
+            "jsonrpc": "2.0"
+        }))
+        .unwrap();
+
+        let mut server = Server::Initialized {
+            client_capabilities: ClientCapabilities {},
+            is_client_initialized: true,
+        };
+
+        let response = server.handle_request(request).unwrap();
+
+        assert!(
+            matches!(server, Server::Shutdown),
+            "Expected server to be shutdown"
+        );
+
+        assert_eq!(
+            response.id(),
+            2,
+            "Expected response id to be same as request id "
+        );
+
+        assert!(matches!(
+            response.payload(),
+            ResponsePayload::Result(ResponseResult::Shutdown)
+        ));
     }
 }

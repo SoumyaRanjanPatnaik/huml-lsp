@@ -25,4 +25,5 @@ impl Request {
 #[serde(tag = "method", content = "params")]
 pub enum RequestMethods {
     Initialize(InitializeParams),
+    Shutdown,
 }

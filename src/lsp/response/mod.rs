@@ -75,4 +75,5 @@ impl From<InitializeResult> for ResponsePayload {
 #[serde(untagged)]
 pub enum ResponseResult {
     Initialize(InitializeResult),
+    Shutdown,
 }
