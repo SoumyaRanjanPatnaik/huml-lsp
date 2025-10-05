@@ -1,3 +1,5 @@
+use std::process;
+
 use crate::lsp::{
     error::ServerError,
     notification::Notification,
@@ -66,6 +68,7 @@ impl Server {
     pub fn handle_notification(&mut self, notification: Notification) -> Result<(), ServerError> {
         match notification {
             Notification::Initialized(_) => self.handle_initialized_notification(),
+            Notification::Exit => process::exit(0),
         }
         Ok(())
     }
@@ -78,9 +81,7 @@ mod test {
 
     use crate::lsp::{
         request::ClientCapabilities,
-        response::{
-            ResponseMessage, ResponsePayload, ResponseResult, initialize::InitializeResult,
-        },
+        response::{ResponsePayload, ResponseResult, initialize::InitializeResult},
     };
 
     #[test]

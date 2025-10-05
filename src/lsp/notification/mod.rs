@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "method", content = "params")]
 pub enum Notification {
     Initialized(InitializedParams),
+    Exit,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
