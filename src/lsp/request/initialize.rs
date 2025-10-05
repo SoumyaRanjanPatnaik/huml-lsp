@@ -8,7 +8,7 @@ pub struct InitializeParams {
     /// the process has not been started by another process. If the parent
     /// process is not alive then the server should exit (see exit notification)
     /// its process.
-    process_id: Integer,
+    process_id: Option<Integer>,
 
     /// Information about the client
     client_info: Option<ClientInfo>,
@@ -24,7 +24,7 @@ pub struct InitializeParams {
 }
 
 impl InitializeParams {
-    pub fn process_id(&self) -> i32 {
+    pub fn process_id(&self) -> Option<i32> {
         self.process_id
     }
 
