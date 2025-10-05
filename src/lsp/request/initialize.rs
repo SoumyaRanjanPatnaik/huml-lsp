@@ -57,7 +57,7 @@ impl ClientInfo {
     }
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, PartialEq, Debug)]
 pub struct ClientCapabilities {}
 
 #[derive(Deserialize, Debug)]

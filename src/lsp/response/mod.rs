@@ -38,6 +38,14 @@ impl ResponseMessage {
             jsonrpc: "2.0".to_string(),
         }
     }
+
+    pub fn id(&self) -> i32 {
+        self.id
+    }
+
+    pub fn payload(&self) -> &ResponsePayload {
+        &self.payload
+    }
 }
 
 #[derive(Serialize, Debug)]

@@ -62,3 +62,59 @@ impl Server {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use serde_json::json;
+
+    use crate::lsp::{
+        response::{ResponsePayload, ResponseResult, initialize::InitializeResult},
+        server::Server,
+    };
+
+    #[test]
+    fn should_initialize_server() {
+        let mut server = Server::Uninitialized;
+        let request = serde_json::from_value(json!({
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "capabilities": {}
+            }
+        }))
+        .unwrap();
+        let response = server.handle_request(request).unwrap();
+        match server {
+            Server::Uninitialized => assert!(false, "Expected the server to be initialized"),
+            Server::Initialized {
+                client_capabilities,
+                is_client_initialized,
+            } => {
+                assert_eq!(
+                    is_client_initialized, false,
+                    "Expected is_client_initialized to be false right after initialization"
+                );
+
+                assert_eq!(
+                    client_capabilities,
+                    serde_json::from_str("{}").unwrap(),
+                    "Expected client_capabilities to match the value passed in the request"
+                )
+            }
+        }
+
+        assert_eq!(
+            response.id(),
+            1,
+            "Expected response id to be same as request id "
+        );
+
+        assert!(
+            matches!(
+                response.payload(),
+                ResponsePayload::Result(ResponseResult::Initialize(InitializeResult { .. }))
+            ),
+            "Expected response to contain an initialize result"
+        );
+    }
+}
