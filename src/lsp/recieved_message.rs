@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::lsp::{notification::Notification, request::Request};
+use crate::lsp::{notification::ClientServerNotification, request::Request};
 
 /// Any message recieved by the server:
 /// Either a request or a notification
@@ -8,5 +8,5 @@ use crate::lsp::{notification::Notification, request::Request};
 #[serde(untagged)]
 pub enum RecievedMessage {
     Request(Request),
-    Notification(Notification),
+    Notification(ClientServerNotification),
 }

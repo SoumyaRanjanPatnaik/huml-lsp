@@ -28,8 +28,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let stdin_reader = io::stdin().lock();
     let rpc_reader = RPCMessageStream::new(stdin_reader);
 
-    let mut stdout_writer = io::stdout().lock();
-
     log("Started Server. Waiting for Messages...");
     for message_result in rpc_reader {
         // Debug logging to inspect requests
@@ -79,6 +77,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         log(encoded_response.as_ref());
 
+        // Lock stdin and write output
+        let mut stdout_writer = io::stdout().lock();
         stdout_writer.write_all(encoded_response.as_ref())?;
         stdout_writer.flush()?;
     }
