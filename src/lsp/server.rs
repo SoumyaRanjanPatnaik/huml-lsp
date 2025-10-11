@@ -1,10 +1,8 @@
-use std::process;
-
 use crate::lsp::{
     error::ServerError,
-    notification::Notification,
+    notification::{trace::{SetTraceParams, TraceValue}, Notification},
     request::{ClientCapabilities, InitializeParams, Request, RequestMethods},
-    response::{ResponseMessage, ResponsePayload, ResponseResult, initialize::InitializeResult},
+    response::{initialize::InitializeResult, ResponseMessage, ResponsePayload, ResponseResult},
 };
 
 #[derive(Debug)]
@@ -13,6 +11,7 @@ pub enum Server {
     Initialized {
         client_capabilities: ClientCapabilities,
         is_client_initialized: bool,
+        trace: TraceValue
     },
     Shutdown,
 }
@@ -34,6 +33,7 @@ impl Server {
         }
         *self = Server::Initialized {
             client_capabilities: params.capabilities().clone(),
+            trace: TraceValue::Off,
             is_client_initialized: false,
         };
         InitializeResult::default().into()
@@ -57,6 +57,16 @@ impl Server {
         }
     }
 
+    fn handle_set_trace(&mut self, params: SetTraceParams) {
+        match self {
+            Self::Initialized{ trace, .. } => *trace = *params.value(),
+            _ => panic!(
+                "Cannot set trace level when server not initialized"
+            ),
+
+        }
+    }
+
     pub fn handle_request(&mut self, req: Request) -> Result<ResponseMessage, ServerError> {
         let response_payload = match req.method() {
             RequestMethods::Initialize(params) => self.handle_initialize_req(params),
@@ -68,6 +78,7 @@ impl Server {
     pub fn handle_notification(&mut self, notification: Notification) -> Result<(), ServerError> {
         match notification {
             Notification::Initialized(_) => self.handle_initialized_notification(),
+            Notification::SetTrace(params) =>
             Notification::Exit => process::exit(0),
         }
         Ok(())
