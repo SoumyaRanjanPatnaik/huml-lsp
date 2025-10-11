@@ -1,12 +1,13 @@
 use std::sync::mpsc;
 
 use crate::lsp::{
-    notification::trace::TraceValue, request::ClientCapabilities, server::logger::LogEvent,
+    notification::{ServerClientNotification, trace::TraceValue},
+    request::ClientCapabilities,
 };
 
 pub struct InitializedServerState {
     pub _client_capabilities: ClientCapabilities,
     pub is_client_initialized: bool,
     pub trace: TraceValue,
-    pub log_event_sender: Option<mpsc::Sender<LogEvent>>,
+    pub notification_sender: mpsc::Sender<ServerClientNotification>,
 }

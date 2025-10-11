@@ -1,5 +1,6 @@
-mod logger;
 mod state;
+mod writer;
+
 use crate::lsp::{
     error::ServerError,
     notification::{
@@ -8,12 +9,12 @@ use crate::lsp::{
     },
     request::{InitializeParams, Request, RequestMethods},
     response::{ResponseMessage, ResponsePayload, ResponseResult, initialize::InitializeResult},
-    server::{
-        logger::{LogEvent, initialize_stdout_logger},
-        state::InitializedServerState,
-    },
+    server::{state::InitializedServerState, writer::initialize_notification_loop},
 };
-use std::{process, sync::mpsc};
+use std::{
+    io::{Write, stdout},
+    process,
+};
 
 pub enum Server {
     Uninitialized,
@@ -56,17 +57,27 @@ impl Server {
                 data: None,
             };
         }
+
+        // Initialize notification writer
+        let notification_sender =
+            initialize_notification_loop(|msg| write!(stdout().lock(), "{msg}"));
+
         *self = Server::Initialized(InitializedServerState {
             _client_capabilities: params.capabilities().clone(),
             is_client_initialized: false,
             trace: TraceValue::Off,
-            log_event_sender: None,
+            notification_sender: notification_sender,
         });
+
+        self.log_message(
+            "Server initialized. Waiting for client initialized ack".to_string(),
+            None,
+        );
+
         InitializeResult::default().into()
     }
 
     fn handle_shutdown_req(&mut self) -> ResponsePayload {
-        self.shutdown_logger();
         *self = Server::Shutdown;
         ResponsePayload::Result(ResponseResult::Shutdown)
     }
@@ -97,21 +108,8 @@ impl Server {
 
     fn handle_set_trace(&mut self, params: SetTraceParams) {
         match self {
-            Self::Initialized(InitializedServerState {
-                trace,
-                log_event_sender,
-                ..
-            }) => {
+            Self::Initialized(InitializedServerState { trace, .. }) => {
                 *trace = params.value();
-                match log_event_sender {
-                    Some(sender) => {
-                        let _ = sender.send(trace.clone().into());
-                    }
-                    None if !trace.is_off() => {
-                        log_event_sender.replace(initialize_stdout_logger(trace.clone()));
-                    }
-                    _ => (),
-                }
             }
             _ => panic!("Cannot set trace level when server not initialized"),
         }
@@ -128,39 +126,24 @@ impl Server {
         }
         Ok(())
     }
-}
 
-// Logging related functions
-impl Server {
-    fn send_log_event(&mut self, log_event: LogEvent) -> Result<(), mpsc::SendError<LogEvent>> {
-        let state = self
-            .as_mut_initialized()
-            .expect("Server should be initialized to send events");
-
-        let sender = match state.log_event_sender.as_ref() {
-            Some(sender) => sender.clone(),
-            None => match log_event {
-                LogEvent::SetTrace(TraceValue::Off)
-                // Herer
-                | LogEvent::Shutdown => return Ok(()),
-                _ => initialize_stdout_logger(state.trace),
-            },
-        };
-
-        sender.send(log_event)
-    }
-
-    fn shutdown_logger(&mut self) {
-        let _ = self.send_log_event(LogEvent::Shutdown);
-    }
-
-    fn _log_message(&mut self, message: String, verbose: Option<String>) {
-        let _ = self.send_log_event(LogEvent::LogMessage(LogTraceParams::new(message, verbose)));
+    /// Send a log notification to the client
+    fn log_message(&mut self, message: String, verbose: Option<String>) {
+        self.as_mut_initialized().inspect(|state| {
+            let log_params = match state.trace {
+                TraceValue::Off => return,
+                TraceValue::Message => LogTraceParams::new(message, None),
+                TraceValue::Verbose => LogTraceParams::new(message, verbose),
+            };
+            let _ = state.notification_sender.send(log_params.into());
+        });
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::sync::mpsc;
+
     use super::*;
     use serde_json::json;
 
@@ -227,10 +210,11 @@ mod test {
         }))
         .unwrap();
 
+        let (notification_sender, _notification_reciever) = mpsc::channel();
         let mut server = Server::Initialized(InitializedServerState {
             _client_capabilities: ClientCapabilities {},
             is_client_initialized: true,
-            log_event_sender: None,
+            notification_sender: notification_sender,
             trace: TraceValue::Off,
         });
 

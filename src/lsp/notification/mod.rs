@@ -16,7 +16,7 @@ pub enum ClientServerNotification {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InitializedParams {}
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(tag = "method", content = "params")]
 #[serde(rename_all = "camelCase")]
 pub enum ServerClientNotification {
