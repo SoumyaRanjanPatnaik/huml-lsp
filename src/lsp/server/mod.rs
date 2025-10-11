@@ -1,8 +1,5 @@
 mod logger;
 mod state;
-
-use std::{process, sync::mpsc};
-
 use crate::lsp::{
     error::ServerError,
     notification::{
@@ -12,10 +9,11 @@ use crate::lsp::{
     request::{InitializeParams, Request, RequestMethods},
     response::{ResponseMessage, ResponsePayload, ResponseResult, initialize::InitializeResult},
     server::{
-        logger::{LogEvent, initialize_logger},
+        logger::{LogEvent, initialize_stdout_logger},
         state::InitializedServerState,
     },
 };
+use std::{process, sync::mpsc};
 
 pub enum Server {
     Uninitialized,
@@ -110,7 +108,7 @@ impl Server {
                         let _ = sender.send(trace.clone().into());
                     }
                     None if !trace.is_off() => {
-                        log_event_sender.replace(initialize_logger(trace.clone()));
+                        log_event_sender.replace(initialize_stdout_logger(trace.clone()));
                     }
                     _ => (),
                 }
@@ -145,7 +143,7 @@ impl Server {
                 LogEvent::SetTrace(TraceValue::Off)
                 // Herer
                 | LogEvent::Shutdown => return Ok(()),
-                _ => initialize_logger(state.trace),
+                _ => initialize_stdout_logger(state.trace),
             },
         };
 
