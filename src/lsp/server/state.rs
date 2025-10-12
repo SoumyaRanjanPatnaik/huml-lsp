@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 
 use crate::lsp::{
-    capabilities::ClientCapabilities,
+    capabilities::client::ClientCapabilities,
     notification::{ServerClientNotification, trace::TraceValue},
 };
 

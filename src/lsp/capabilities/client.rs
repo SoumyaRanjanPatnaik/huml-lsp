@@ -7,6 +7,12 @@ pub struct ClientCapabilities {
     text_document: Option<TextDocumentClientCapabilities>,
 }
 
+impl ClientCapabilities {
+    pub fn text_document(&self) -> Option<&TextDocumentClientCapabilities> {
+        self.text_document.as_ref()
+    }
+}
+
 /// Text document specific client capabilities.
 ///
 /// See [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentClientCapabilities) for more info.

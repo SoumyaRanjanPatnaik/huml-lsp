@@ -1,8 +1,5 @@
 use serde::Serialize;
 
-#[derive(Serialize, Debug, Default)]
-pub struct ServerCapabilities {}
-
 #[derive(Serialize, Debug)]
 pub struct ServerInfo {
     name: &'static str,

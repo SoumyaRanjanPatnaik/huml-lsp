@@ -1,4 +1,4 @@
-use crate::{lsp::capabilities::ClientCapabilities, rpc::Integer};
+use crate::{lsp::capabilities::client::ClientCapabilities, rpc::Integer};
 use serde::Deserialize;
 
 /// Params for a [super::RequestMethod::Initialize]

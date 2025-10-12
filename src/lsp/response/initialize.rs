@@ -1,4 +1,4 @@
-use crate::lsp::properties::{ServerCapabilities, ServerInfo};
+use crate::lsp::{capabilities::server::ServerCapabilities, properties::ServerInfo};
 use serde::Serialize;
 
 #[derive(Serialize, Default, Debug)]

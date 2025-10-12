@@ -205,7 +205,7 @@ mod test {
     use serde_json::json;
 
     use crate::lsp::{
-        capabilities::ClientCapabilities,
+        capabilities::client::ClientCapabilities,
         response::{ResponsePayload, ResponseResult, initialize::InitializeResult},
         server::InitializedServerState,
     };
