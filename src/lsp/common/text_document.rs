@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use crate::rpc::Integer;
+use crate::rpc::{Integer, UInteger};
 
 /// An item to transfer a text document from the client to the server.
 ///
@@ -37,5 +37,74 @@ impl TextDocumentItem {
 
     pub fn text(&self) -> &str {
         &self.text
+    }
+}
+/// Text documents are identified using a URI.
+/// On the protocol level, URIs are passed as strings.
+///
+/// See [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentIdentifier)
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TextDocumentIdentifier {
+    uri: String,
+}
+
+impl TextDocumentIdentifier {
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+}
+
+/// An identifier to denote a specific version of a text document.
+/// This information usually flows from the client to the server.
+///
+/// See [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#versionedTextDocumentIdentifier)
+#[derive(Serialize, Deserialize, Debug)]
+pub struct VersionedTextDocumentIdentifier {
+    #[serde(flatten)]
+    identifier: TextDocumentIdentifier,
+    version: Integer,
+}
+
+impl VersionedTextDocumentIdentifier {
+    pub fn version(&self) -> i32 {
+        self.version
+    }
+
+    pub fn uri(&self) -> &str {
+        self.identifier.uri()
+    }
+}
+
+/// Indicates a position in the document
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+pub struct Position {
+    line: UInteger,
+    character: UInteger,
+}
+
+impl Position {
+    pub fn line(&self) -> u32 {
+        self.line
+    }
+
+    pub fn character(&self) -> u32 {
+        self.character
+    }
+}
+
+/// Indicates a range of text in the document
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+pub struct Range {
+    start: Position,
+    end: Position,
+}
+
+impl Range {
+    pub fn start(&self) -> Position {
+        self.start
+    }
+
+    pub fn end(&self) -> Position {
+        self.end
     }
 }

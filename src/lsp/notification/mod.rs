@@ -5,13 +5,12 @@
 //! - [`ClientServerNotification`]: Notifications sent from the client to the server.
 //! - [`ServerClientNotification`]: Notifications sent from the server to the client.
 
-/// Data structures and functionality related to the trace notification
+pub mod did_change;
+pub mod did_open;
 pub mod trace;
 
-/// Data structures and functionality related to the textDocument/didOpen notification
-pub mod did_open;
-
 use crate::lsp::notification::{
+    did_change::DidChangeTextDocumentParams,
     did_open::DidOpenTextDocumentParams,
     trace::{LogTraceParams, SetTraceParams},
 };
@@ -38,6 +37,11 @@ pub enum ClientServerNotification {
     /// newly opened text documents.
     #[serde(rename = "textDocument/didOpen")]
     DidOpen(DidOpenTextDocumentParams),
+
+    /// The document open notification is sent from the client to the server to signal
+    /// newly opened text documents.
+    #[serde(rename = "textDocument/didChange")]
+    DidChange(DidChangeTextDocumentParams),
 
     /// The `exit` notification is sent from the client to the server to ask it to exit.
     /// This notification must only be sent after a `shutdown` request has been successfully

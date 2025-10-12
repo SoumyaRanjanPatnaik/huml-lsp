@@ -12,6 +12,7 @@ use crate::lsp::{
     error::ServerError,
     notification::{
         ClientServerNotification,
+        did_change::DidChangeTextDocumentParams,
         did_open::DidOpenTextDocumentParams,
         trace::{LogTraceParams, SetTraceParams, TraceValue},
     },
@@ -174,6 +175,7 @@ impl Server {
         }
     }
 
+    /// Handles the `textDocument/didOpen` notification
     pub fn handle_did_open(&mut self, params: DidOpenTextDocumentParams) {
         let opened_document_item = params.into_text_document();
         match self {
@@ -192,6 +194,19 @@ impl Server {
         }
     }
 
+    /// Handles the `textDocument/didChange` notification
+    pub fn handle_did_change(&mut self, params: DidChangeTextDocumentParams) {
+        match self {
+            Self::Initialized(InitializedServerState { documents, .. }) => {
+                // Update document if exists
+                documents
+                    .iter_mut()
+                    .find(|doc| doc.uri() == params.text_document().uri());
+            }
+            _ => panic!("Cannot handle text document notifications when server not initialized"),
+        }
+    }
+
     /// The main entry point for dispatching all incoming notifications from the client.
     ///
     /// It takes a `ClientServerNotification` and routes it to the appropriate handler.
@@ -204,8 +219,9 @@ impl Server {
             ClientServerNotification::Exit => process::exit(0),
             ClientServerNotification::SetTrace(params) => self.handle_set_trace(params),
 
-            // Text Document Present
+            // Text Document Related Notifications
             ClientServerNotification::DidOpen(document_sync) => self.handle_did_open(document_sync),
+            ClientServerNotification::DidChange(did_change_params) => todo!(),
         }
         Ok(())
     }
