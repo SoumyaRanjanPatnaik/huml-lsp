@@ -9,16 +9,17 @@ use crate::lsp::common::text_document::TextDocumentItem;
 /// [`textDocument/DidOpen`]: crate::lsp::notification::ClientServerNotification::DidOpen
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct DidOpenTextDocumentParams {
-    text_document: TextDocumentItem,
+pub struct DidOpenTextDocumentParams<'a> {
+    #[serde(borrow)]
+    text_document: TextDocumentItem<'a>,
 }
 
-impl DidOpenTextDocumentParams {
-    pub fn text_document(&self) -> &TextDocumentItem {
+impl<'a> DidOpenTextDocumentParams<'a> {
+    pub fn text_document(&self) -> &TextDocumentItem<'_> {
         &self.text_document
     }
 
-    pub fn into_text_document(self) -> TextDocumentItem {
+    pub fn into_text_document(self) -> TextDocumentItem<'a> {
         return self.text_document;
     }
 }

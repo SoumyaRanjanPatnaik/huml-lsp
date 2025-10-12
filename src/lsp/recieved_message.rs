@@ -9,5 +9,5 @@ use crate::lsp::{notification::ClientServerNotification, request::Request};
 pub enum RecievedMessage<'a> {
     #[serde(borrow)]
     Request(Request<'a>),
-    Notification(ClientServerNotification),
+    Notification(ClientServerNotification<'a>),
 }

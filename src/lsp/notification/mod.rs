@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Debug)]
 #[serde(tag = "method", content = "params")]
 #[serde(rename_all = "camelCase")]
-pub enum ClientServerNotification {
+pub enum ClientServerNotification<'a> {
     /// The `initialized` notification is sent from the client to the server after the client
     /// has received and successfully processed the [`Response Result`]
     /// It signals that the server can now send notifications and requests to the client.
@@ -35,8 +35,9 @@ pub enum ClientServerNotification {
 
     /// The document open notification is sent from the client to the server to signal
     /// newly opened text documents.
+    #[serde(borrow)]
     #[serde(rename = "textDocument/didOpen")]
-    DidOpen(DidOpenTextDocumentParams),
+    DidOpen(DidOpenTextDocumentParams<'a>),
 
     /// The document open notification is sent from the client to the server to signal
     /// newly opened text documents.

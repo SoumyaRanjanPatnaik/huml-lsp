@@ -181,14 +181,15 @@ impl Server {
         match self {
             Self::Initialized(InitializedServerState { documents, .. }) => {
                 // Replace document if already exists
-                let existing_doc_position = documents
-                    .iter()
-                    .position(|doc| doc.uri() == opened_document_item.uri());
+                // let existing_doc_position = documents
+                //     .iter()
+                //     .position(|doc| doc.full_document().uri() == opened_document_item.uri());
 
-                match existing_doc_position {
-                    Some(idx) => documents[idx] = opened_document_item,
-                    None => todo!(),
-                };
+                // TODO: Uncomment when the structure of server's document state is finalized
+                // match existing_doc_position {
+                //     Some(idx) => documents[idx] = opened_document_item,
+                //     None => todo!(),
+                // };
             }
             _ => panic!("Cannot handle text document notifications when server not initialized"),
         }
@@ -201,7 +202,7 @@ impl Server {
                 // Update document if exists
                 documents
                     .iter_mut()
-                    .find(|doc| doc.uri() == params.text_document().uri());
+                    .find(|doc| doc.full_document().uri() == params.text_document().uri());
             }
             _ => panic!("Cannot handle text document notifications when server not initialized"),
         }

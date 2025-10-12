@@ -1,28 +1,27 @@
-use serde::{Deserialize, Serialize};
-
 use crate::rpc::{Integer, UInteger};
+use serde::{Deserialize, Serialize};
 
 /// An item to transfer a text document from the client to the server.
 ///
 /// A text document is immutable
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct TextDocumentItem {
+pub struct TextDocumentItem<'a> {
     /// The text document's URI.
-    uri: String,
+    uri: &'a str,
 
     /// The text document's language identifier.
-    language_id: String,
+    language_id: &'a str,
 
     /// The version number of this document (it will increase after each
     /// change, including undo/redo).
     version: Integer,
 
     /// The content of the opened text document.
-    text: String,
+    text: &'a str,
 }
 
-impl TextDocumentItem {
+impl<'a> TextDocumentItem<'a> {
     pub fn uri(&self) -> &str {
         &self.uri
     }
@@ -39,6 +38,54 @@ impl TextDocumentItem {
         &self.text
     }
 }
+
+/// An item to transfer a text document from the client to the server.
+///
+/// A text document is immutable
+pub struct TextDocumentItemOwned {
+    /// The text document's URI.
+    uri: String,
+
+    /// The text document's language identifier.
+    language_id: String,
+
+    /// The version number of this document (it will increase after each
+    /// change, including undo/redo).
+    version: Integer,
+
+    /// The content of the opened text document.
+    text: String,
+}
+
+impl TextDocumentItemOwned {
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+
+    pub fn language_id(&self) -> &str {
+        &self.language_id
+    }
+
+    pub fn version(&self) -> i32 {
+        self.version
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+}
+
+impl<'a> From<&TextDocumentItem<'a>> for TextDocumentItemOwned {
+    fn from(value: &TextDocumentItem<'_>) -> Self {
+        Self {
+            uri: value.uri().to_owned(),
+            language_id: value.language_id().to_owned(),
+            version: value.version(),
+            text: value.text.to_owned(),
+        }
+    }
+}
+
 /// Text documents are identified using a URI.
 /// On the protocol level, URIs are passed as strings.
 ///
