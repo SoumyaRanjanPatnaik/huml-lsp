@@ -2,6 +2,12 @@
 name = "huml-lsp"
 version = "0.1.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
+keywords = ["Soumya Ranjan Patnaik <github@sranjan.co.in>"]
+description = "Language Server implementation for HUML"
+repository = "https://github.com/SoumyaRanjanPatnaik/huml-lsp"
+homepage = "https://huml.io"
+categories = ["development-tools"]
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
