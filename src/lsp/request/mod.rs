@@ -22,15 +22,16 @@ use serde::Deserialize;
 ///
 /// [Response]: crate::lsp::response::ResponseMessage
 #[derive(Deserialize, Debug)]
-pub struct Request {
+pub struct Request<'a> {
     /// The unique identifier for the request, used to match it with a response.
     id: Integer,
     /// The specific method and parameters for this request.
+    #[serde(borrow)]
     #[serde(flatten)]
-    method: RequestMethod,
+    method: RequestMethod<'a>,
 }
 
-impl Request {
+impl<'a> Request<'a> {
     /// Returns the unique identifier (`id`) of the request.
     pub fn id(&self) -> i32 {
         self.id
@@ -38,7 +39,7 @@ impl Request {
 
     /// Returns a reference to the enum that holds the specific method and parameters
     /// of this request.
-    pub fn method(&self) -> &RequestMethod {
+    pub fn method(&self) -> &RequestMethod<'_> {
         &self.method
     }
 }
@@ -50,13 +51,14 @@ impl Request {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "method", content = "params")]
-pub enum RequestMethod {
+pub enum RequestMethod<'a> {
     /// The `initialize` request is the first request sent from the client to the server.
     /// It is used to negotiate capabilities and initialize the server session.
     ///
     /// See the [specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize)
     /// for more details.
-    Initialize(InitializeParams),
+    #[serde(borrow)]
+    Initialize(InitializeParams<'a>),
 
     /// The `shutdown` request asks the server to shut down gracefully.
     /// The server should not exit until it receives an `exit` notification.

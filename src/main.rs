@@ -45,7 +45,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // Parse / recieve the message
-        let message: RecievedMessage = match message_result.map(|msg| jsonrpc_decode(&msg)) {
+        let message: RecievedMessage = match message_result.as_ref().map(|msg| jsonrpc_decode(msg))
+        {
             Ok(Ok(msg)) => msg,
             Ok(Err(_)) => continue,
             Err(decode_err) => {
@@ -55,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         };
 
         let response = match message {
-            RecievedMessage::Request(req) => server.handle_request(req),
+            RecievedMessage::Request(req) => server.handle_request(&req),
             RecievedMessage::Notification(notification) => {
                 server.handle_notification(notification)?;
                 continue;

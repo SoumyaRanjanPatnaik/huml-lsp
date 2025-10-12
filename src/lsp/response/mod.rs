@@ -53,7 +53,7 @@ impl ResponseMessage {
     ///
     /// This is the preferred, safe method for creating a response, as it ensures
     /// that the response ID correctly matches the request ID.
-    pub fn new_for(request: Request, payload: ResponsePayload) -> Self {
+    pub fn new_for(request: &Request, payload: ResponsePayload) -> Self {
         Self {
             id: request.id(),
             payload,

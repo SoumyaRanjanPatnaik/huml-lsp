@@ -5,7 +5,7 @@ use serde::Deserialize;
 /// [Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initializeParams)
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct InitializeParams {
+pub struct InitializeParams<'a> {
     /// The process Id of the parent process that started the server. Is null if
     /// the process has not been started by another process. If the parent
     /// process is not alive then the server should exit (see exit notification)
@@ -13,7 +13,8 @@ pub struct InitializeParams {
     process_id: Option<Integer>,
 
     /// Information about the client
-    client_info: Option<ClientInfo>,
+    #[serde(borrow)]
+    client_info: Option<ClientInfo<'a>>,
 
     /// The capabilities provided by the client (editor or tool)
     capabilities: ClientCapabilities,
@@ -22,15 +23,16 @@ pub struct InitializeParams {
     ///	This property is only available if the client supports workspace folders.
     ///	It can be `null` if the client supports workspace folders but none are
     ///	configured.
-    workspace_folders: Option<WorkspaceFolder>,
+    #[serde(borrow)]
+    workspace_folders: Option<WorkspaceFolder<'a>>,
 }
 
-impl InitializeParams {
+impl<'a> InitializeParams<'a> {
     pub fn process_id(&self) -> Option<i32> {
         self.process_id
     }
 
-    pub fn client_info(&self) -> Option<&ClientInfo> {
+    pub fn client_info(&self) -> Option<&ClientInfo<'_>> {
         self.client_info.as_ref()
     }
 
@@ -38,7 +40,7 @@ impl InitializeParams {
         &self.capabilities
     }
 
-    pub fn workspace_folders(&self) -> Option<&WorkspaceFolder> {
+    pub fn workspace_folders(&self) -> Option<&WorkspaceFolder<'_>> {
         self.workspace_folders.as_ref()
     }
 }
@@ -47,12 +49,12 @@ impl InitializeParams {
 ///
 /// @since 3.15.0
 #[derive(Deserialize, Debug)]
-pub struct ClientInfo {
-    name: String,
-    version: String,
+pub struct ClientInfo<'a> {
+    name: &'a str,
+    version: &'a str,
 }
 
-impl ClientInfo {
+impl<'a> ClientInfo<'a> {
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -63,16 +65,16 @@ impl ClientInfo {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct WorkspaceFolder {
+pub struct WorkspaceFolder<'a> {
     /// The associated URI for this workspace folder.
-    uri: String,
+    uri: &'a str,
 
     /// The name of the workspace folder. Used to refer to this
     ///  workspace folder in the user interface.
-    name: String,
+    name: &'a str,
 }
 
-impl WorkspaceFolder {
+impl<'a> WorkspaceFolder<'a> {
     pub fn uri(&self) -> &str {
         &self.uri
     }

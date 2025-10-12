@@ -135,7 +135,7 @@ impl Server {
     ///
     /// It takes a `Request` and routes it to the appropriate handler based on its method.
     /// It returns a `ResponseMessage` to be sent back to the client.
-    pub fn handle_request(&mut self, req: Request) -> Result<ResponseMessage, ServerError> {
+    pub fn handle_request<'a>(&mut self, req: &'a Request) -> Result<ResponseMessage, ServerError> {
         let response_payload = match req.method() {
             RequestMethod::Initialize(params) => self.handle_initialize_req(params),
             RequestMethod::Shutdown => self.handle_shutdown_req(),
@@ -260,7 +260,7 @@ mod test {
     #[test]
     fn should_initialize_server() {
         let mut server = Server::Uninitialized;
-        let request = serde_json::from_value(json!({
+        let request_str = serde_json::to_string(&json!({
             "id": 1,
             "method": "initialize",
             "params": {
@@ -269,7 +269,8 @@ mod test {
             "jsonrpc": "2.0"
         }))
         .unwrap();
-        let response = server.handle_request(request).unwrap();
+        let request: Request<'_> = serde_json::from_str(&request_str).unwrap();
+        let response = server.handle_request(&request).unwrap();
         match server {
             Server::Initialized(InitializedServerState {
                 _client_capabilities: client_capabilities,
@@ -311,12 +312,13 @@ mod test {
 
     #[test]
     fn test_shutdown() {
-        let request = serde_json::from_value(json!({
+        let request_str = serde_json::to_string(&json!({
             "id": 2,
             "method": "shutdown",
             "jsonrpc": "2.0"
         }))
         .unwrap();
+        let request = serde_json::from_str(&request_str).unwrap();
 
         let (notification_sender, _notification_reciever) = mpsc::channel();
         let mut server = Server::Initialized(InitializedServerState {
@@ -327,7 +329,7 @@ mod test {
             documents: vec![],
         });
 
-        let response = server.handle_request(request).unwrap();
+        let response = server.handle_request(&request).unwrap();
 
         assert!(
             matches!(server, Server::Shutdown),
