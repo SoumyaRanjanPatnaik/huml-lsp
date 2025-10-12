@@ -8,11 +8,17 @@
 /// Data structures and functionality related to the trace notification
 pub mod trace;
 
-use crate::lsp::notification::trace::{LogTraceParams, SetTraceParams};
+/// Data structures and functionality related to the textDocument/didOpen notification
+pub mod did_open;
+
+use crate::lsp::notification::{
+    did_open::DidOpenTextDocumentParams,
+    trace::{LogTraceParams, SetTraceParams},
+};
 use serde::{Deserialize, Serialize};
 
 /// Represents notifications sent from the client (e.g., editor) to the language server.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 #[serde(tag = "method", content = "params")]
 #[serde(rename_all = "camelCase")]
 pub enum ClientServerNotification {
@@ -28,6 +34,11 @@ pub enum ClientServerNotification {
     #[serde(rename = "$/setTrace")]
     SetTrace(SetTraceParams),
 
+    /// The document open notification is sent from the client to the server to signal
+    /// newly opened text documents.
+    #[serde(rename = "textDocument/didOpen")]
+    DidOpen(DidOpenTextDocumentParams),
+
     /// The `exit` notification is sent from the client to the server to ask it to exit.
     /// This notification must only be sent after a `shutdown` request has been successfully
     /// handled, transitioning the [Server] into the [Server::Shutdown] state.
@@ -38,11 +49,11 @@ pub enum ClientServerNotification {
 }
 
 /// The parameters for the `initialized` notification.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct InitializedParams {}
 
 /// Represents notifications sent from the language server to the client.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug)]
 #[serde(tag = "method", content = "params")]
 #[serde(rename_all = "camelCase")]
 pub enum ServerClientNotification {

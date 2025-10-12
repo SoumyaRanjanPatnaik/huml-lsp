@@ -12,6 +12,7 @@ use crate::lsp::{
     error::ServerError,
     notification::{
         ClientServerNotification,
+        did_open::DidOpenTextDocumentParams,
         trace::{LogTraceParams, SetTraceParams, TraceValue},
     },
     request::{InitializeParams, Request, RequestMethod},
@@ -70,6 +71,14 @@ impl Server {
             None
         }
     }
+
+    /// Returns `true` if the server is [`Initialized`].
+    ///
+    /// [`Initialized`]: Server::Initialized
+    #[must_use]
+    pub fn is_initialized(&self) -> bool {
+        matches!(self, Self::Initialized(..))
+    }
 }
 
 // Request related methods
@@ -101,6 +110,7 @@ impl Server {
             is_client_initialized: false,
             trace: TraceValue::Off,
             notification_sender,
+            documents: vec![],
         });
 
         self.log_message(
@@ -164,6 +174,24 @@ impl Server {
         }
     }
 
+    pub fn handle_did_open(&mut self, params: DidOpenTextDocumentParams) {
+        let opened_document_item = params.into_text_document();
+        match self {
+            Self::Initialized(InitializedServerState { documents, .. }) => {
+                // Replace document if already exists
+                let existing_doc_position = documents
+                    .iter()
+                    .position(|doc| doc.uri() == opened_document_item.uri());
+
+                match existing_doc_position {
+                    Some(idx) => documents[idx] = opened_document_item,
+                    None => todo!(),
+                };
+            }
+            _ => panic!("Cannot handle text document notifications when server not initialized"),
+        }
+    }
+
     /// The main entry point for dispatching all incoming notifications from the client.
     ///
     /// It takes a `ClientServerNotification` and routes it to the appropriate handler.
@@ -173,8 +201,11 @@ impl Server {
     ) -> Result<(), ServerError> {
         match notification {
             ClientServerNotification::Initialized(_) => self.handle_initialized_notification(),
-            ClientServerNotification::SetTrace(params) => self.handle_set_trace(params),
             ClientServerNotification::Exit => process::exit(0),
+            ClientServerNotification::SetTrace(params) => self.handle_set_trace(params),
+
+            // Text Document Present
+            ClientServerNotification::DidOpen(document_sync) => self.handle_did_open(document_sync),
         }
         Ok(())
     }
@@ -277,6 +308,7 @@ mod test {
             is_client_initialized: true,
             notification_sender: notification_sender,
             trace: TraceValue::Off,
+            documents: vec![],
         });
 
         let response = server.handle_request(request).unwrap();

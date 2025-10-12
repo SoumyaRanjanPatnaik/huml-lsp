@@ -29,5 +29,8 @@ pub mod request;
 /// Contains the definitions for all LSP response messages.
 pub mod response;
 
+/// Contains the definitions of  common JSON structures used in the LSP specification
+pub mod common;
+
 /// Contains the server state and request handlers
 pub mod server;
