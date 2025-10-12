@@ -75,8 +75,8 @@ impl TextDocumentItemOwned {
     }
 }
 
-impl<'a> From<&TextDocumentItem<'a>> for TextDocumentItemOwned {
-    fn from(value: &TextDocumentItem<'_>) -> Self {
+impl<'a> From<TextDocumentItem<'a>> for TextDocumentItemOwned {
+    fn from(value: TextDocumentItem<'_>) -> Self {
         Self {
             uri: value.uri().to_owned(),
             language_id: value.language_id().to_owned(),

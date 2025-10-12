@@ -1,4 +1,6 @@
-use std::sync::mpsc;
+use std::{collections::LinkedList, sync::mpsc};
+
+use ouroboros::self_referencing;
 
 use crate::lsp::{
     capabilities::client::ClientCapabilities,
@@ -14,12 +16,20 @@ pub struct InitializedServerState {
     pub documents: Vec<LineSeperatedDocument>,
 }
 
+#[self_referencing]
 pub struct LineSeperatedDocument {
-    full_document: TextDocumentItemOwned,
+    pub full_document: TextDocumentItemOwned,
+    #[borrows(full_document)]
+    #[covariant]
+    lines: LinkedList<&'this str>,
 }
 
-impl LineSeperatedDocument {
-    pub fn full_document(&self) -> &TextDocumentItemOwned {
-        &self.full_document
+impl From<TextDocumentItemOwned> for LineSeperatedDocument {
+    fn from(value: TextDocumentItemOwned) -> Self {
+        LineSeperatedDocumentBuilder {
+            full_document: value,
+            lines_builder: |document| document.text().lines().collect(),
+        }
+        .build()
     }
 }

@@ -9,6 +9,7 @@ mod state;
 mod writer;
 
 use crate::lsp::{
+    common::text_document::TextDocumentItemOwned,
     error::ServerError,
     notification::{
         ClientServerNotification,
@@ -177,19 +178,19 @@ impl Server {
 
     /// Handles the `textDocument/didOpen` notification
     pub fn handle_did_open(&mut self, params: DidOpenTextDocumentParams) {
-        let opened_document_item = params.into_text_document();
+        let opened_document_item: TextDocumentItemOwned = params.into_text_document();
+
         match self {
             Self::Initialized(InitializedServerState { documents, .. }) => {
                 // Replace document if already exists
-                // let existing_doc_position = documents
-                //     .iter()
-                //     .position(|doc| doc.full_document().uri() == opened_document_item.uri());
+                let existing_doc_position = documents
+                    .iter()
+                    .position(|doc| doc.borrow_full_document().uri() == opened_document_item.uri());
 
-                // TODO: Uncomment when the structure of server's document state is finalized
-                // match existing_doc_position {
-                //     Some(idx) => documents[idx] = opened_document_item,
-                //     None => todo!(),
-                // };
+                match existing_doc_position {
+                    Some(idx) => documents[idx] = opened_document_item.into(),
+                    None => todo!(),
+                };
             }
             _ => panic!("Cannot handle text document notifications when server not initialized"),
         }
@@ -202,7 +203,7 @@ impl Server {
                 // Update document if exists
                 documents
                     .iter_mut()
-                    .find(|doc| doc.full_document().uri() == params.text_document().uri());
+                    .find(|doc| doc.borrow_full_document().uri() == params.text_document().uri());
             }
             _ => panic!("Cannot handle text document notifications when server not initialized"),
         }

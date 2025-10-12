@@ -1,6 +1,5 @@
+use crate::lsp::common::text_document::{TextDocumentItem, TextDocumentItemOwned};
 use serde::Deserialize;
-
-use crate::lsp::common::text_document::TextDocumentItem;
 
 /// Params for the [`textDocument/DidOpen`] notification
 ///
@@ -19,7 +18,7 @@ impl<'a> DidOpenTextDocumentParams<'a> {
         &self.text_document
     }
 
-    pub fn into_text_document(self) -> TextDocumentItem<'a> {
-        return self.text_document;
+    pub fn into_text_document(self) -> TextDocumentItemOwned {
+        return self.text_document.into();
     }
 }
