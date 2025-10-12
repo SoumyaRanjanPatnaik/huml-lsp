@@ -1,6 +1,8 @@
 use crate::rpc::Integer;
 use serde::Deserialize;
 
+/// Params for a [super::RequestMethod::Initialize]
+/// [Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initializeParams)
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct InitializeParams {
@@ -41,6 +43,9 @@ impl InitializeParams {
     }
 }
 
+/// Information about the client
+///
+/// @since 3.15.0
 #[derive(Deserialize, Debug)]
 pub struct ClientInfo {
     name: String,

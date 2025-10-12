@@ -1,3 +1,10 @@
+//! Implements the main language server logic, state management, and message dispatch.
+//!
+//! This module contains the core `Server` enum, which acts as a state machine
+//! representing the server's lifecycle (Uninitialized, Initialized, Shutdown). It is
+//! responsible for receiving requests and notifications, dispatching them to the
+//! appropriate handlers, and managing the server's state accordingly.
+
 mod state;
 mod writer;
 
@@ -16,18 +23,34 @@ use std::{
     process,
 };
 
+/// Represents the state of the language server throughout its lifecycle.
+///
+/// The server transitions through these states based on the LSP lifecycle messages
+/// it receives from the client (e.g., `initialize`, `initialized`, `shutdown`, `exit`).
 pub enum Server {
+    /// The initial state of the server before the `initialize` request is received.
+    /// In this state, the server can only respond to the `initialize` request.
     Uninitialized,
+    /// The state after the server has successfully responded to an `initialize` request.
+    /// It holds the server's state, including client capabilities and trace settings.
     Initialized(InitializedServerState),
+    /// The state after the server has received a `shutdown` request.
+    /// In this state, most requests and notifications will be ignored, and the server
+    /// is waiting for an `exit` notification to terminate.
     Shutdown,
 }
 
 // Generic functions related to server
 impl Server {
+    /// Creates a new server in the `Uninitialized` state.
     pub fn new() -> Self {
         Self::Uninitialized
     }
 
+    /// Returns an immutable reference to the initialized server state, if available.
+    ///
+    /// Returns `Some(&InitializedServerState)` if the server is in the `Initialized` state,
+    /// otherwise returns `None`.
     pub fn as_initialized(&self) -> Option<&InitializedServerState> {
         if let Self::Initialized(v) = self {
             Some(v)
@@ -36,6 +59,10 @@ impl Server {
         }
     }
 
+    /// Returns a mutable reference to the initialized server state, if available.
+    ///
+    /// Returns `Some(&mut InitializedServerState)` if the server is in the `Initialized` state,
+    /// otherwise returns `None`.
     pub fn as_mut_initialized(&mut self) -> Option<&mut InitializedServerState> {
         if let Self::Initialized(v) = self {
             Some(v)
@@ -47,13 +74,20 @@ impl Server {
 
 // Request related methods
 impl Server {
-    /// Initialize the server
+    /// Handles the `initialize` request from the client.
+    ///
+    /// This method transitions the server from the `Uninitialized` state to the `Initialized`
+    /// state. It sets up the notification writer, stores client capabilities, and prepares
+    /// the server for further communication. It returns an error if called more than once.
     fn handle_initialize_req(&mut self, params: &InitializeParams) -> ResponsePayload {
         use ResponsePayload::*;
         if matches!(self, Server::Initialized { .. }) {
             return Error {
-                code: -1,
-                message: "".to_string(),
+                // TODO: Standardize errors
+                // As per LSP spec: "Using the initialize request a second time..."
+                // "...is diagnosed as an error with a predefined code."
+                code: -32002, // ServerErrorCodes::ServerNotInitialized
+                message: "Server is already initialized".to_string(),
                 data: None,
             };
         }
@@ -66,7 +100,7 @@ impl Server {
             _client_capabilities: params.capabilities().clone(),
             is_client_initialized: false,
             trace: TraceValue::Off,
-            notification_sender: notification_sender,
+            notification_sender,
         });
 
         self.log_message(
@@ -77,11 +111,19 @@ impl Server {
         InitializeResult::default().into()
     }
 
+    /// Handles the `shutdown` request from the client.
+    ///
+    /// This method transitions the server to the `Shutdown` state, preparing it
+    /// to terminate upon receiving an `exit` notification.
     fn handle_shutdown_req(&mut self) -> ResponsePayload {
         *self = Server::Shutdown;
         ResponsePayload::Result(ResponseResult::Shutdown)
     }
 
+    /// The main entry point for dispatching all incoming requests from the client.
+    ///
+    /// It takes a `Request` and routes it to the appropriate handler based on its method.
+    /// It returns a `ResponseMessage` to be sent back to the client.
     pub fn handle_request(&mut self, req: Request) -> Result<ResponseMessage, ServerError> {
         let response_payload = match req.method() {
             RequestMethods::Initialize(params) => self.handle_initialize_req(params),
@@ -93,10 +135,14 @@ impl Server {
 
 // Notification related methods
 impl Server {
+    /// Handles the `initialized` notification from the client.
+    ///
+    /// This notification confirms that the client has successfully processed the
+    /// `initialize` response.
     fn handle_initialized_notification(&mut self) {
         match self {
             Server::Uninitialized => panic!(
-                "Recieved initialized notification before the initialize request. Server not yet initialized"
+                "Received initialized notification before the initialize request. Server not yet initialized"
             ),
             Server::Initialized(InitializedServerState {
                 is_client_initialized,
@@ -106,6 +152,9 @@ impl Server {
         }
     }
 
+    /// Handles the [`$/setTrace`] notification to adjust the server's logging verbosity.
+    ///
+    /// [`$/setTrace`]: crate::lsp::notification::ClientServerNotification::SetTrace
     fn handle_set_trace(&mut self, params: SetTraceParams) {
         match self {
             Self::Initialized(InitializedServerState { trace, .. }) => {
@@ -115,6 +164,9 @@ impl Server {
         }
     }
 
+    /// The main entry point for dispatching all incoming notifications from the client.
+    ///
+    /// It takes a `ClientServerNotification` and routes it to the appropriate handler.
     pub fn handle_notification(
         &mut self,
         notification: ClientServerNotification,
@@ -127,7 +179,12 @@ impl Server {
         Ok(())
     }
 
-    /// Send a log notification to the client
+    /// Sends a [`$/logTrace`] notification to the client if tracing is enabled.
+    ///
+    /// The verbosity of the message is determined by the current `TraceValue`
+    /// set by the client.
+    ///
+    /// [`$/logTrace`]: crate::lsp::notification::ServerClientNotification::LogTrace
     fn log_message(&mut self, message: String, verbose: Option<String>) {
         self.as_mut_initialized().inspect(|state| {
             let log_params = match state.trace {
