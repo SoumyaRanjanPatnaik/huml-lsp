@@ -17,6 +17,9 @@ pub mod notification;
 /// Defines common data structures and types used throughout the LSP.
 pub mod properties;
 
+/// Defines types related to LSP capabilities
+pub mod capabilities;
+
 /// Provides a structure for deserializing any incoming message from the client.
 pub mod recieved_message;
 

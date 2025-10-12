@@ -1,8 +1,8 @@
 use std::sync::mpsc;
 
 use crate::lsp::{
+    capabilities::ClientCapabilities,
     notification::{ServerClientNotification, trace::TraceValue},
-    request::ClientCapabilities,
 };
 
 pub struct InitializedServerState {

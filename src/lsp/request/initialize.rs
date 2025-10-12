@@ -1,4 +1,4 @@
-use crate::rpc::Integer;
+use crate::{lsp::capabilities::ClientCapabilities, rpc::Integer};
 use serde::Deserialize;
 
 /// Params for a [super::RequestMethod::Initialize]
@@ -61,9 +61,6 @@ impl ClientInfo {
         &self.version
     }
 }
-
-#[derive(Deserialize, Clone, PartialEq, Debug)]
-pub struct ClientCapabilities {}
 
 #[derive(Deserialize, Debug)]
 pub struct WorkspaceFolder {

@@ -205,7 +205,7 @@ mod test {
     use serde_json::json;
 
     use crate::lsp::{
-        request::ClientCapabilities,
+        capabilities::ClientCapabilities,
         response::{ResponsePayload, ResponseResult, initialize::InitializeResult},
         server::InitializedServerState,
     };
@@ -234,9 +234,13 @@ mod test {
                     "Expected is_client_initialized to be false right after initialization"
                 );
 
+                let actual_capabilities_str = serde_json::to_string(&client_capabilities).unwrap();
+
+                let expected_capabilities_str =
+                    serde_json::to_string(&ClientCapabilities::default()).unwrap();
+
                 assert_eq!(
-                    client_capabilities,
-                    serde_json::from_str("{}").unwrap(),
+                    expected_capabilities_str, actual_capabilities_str,
                     "Expected client_capabilities to match the value passed in the request"
                 )
             }
@@ -269,7 +273,7 @@ mod test {
 
         let (notification_sender, _notification_reciever) = mpsc::channel();
         let mut server = Server::Initialized(InitializedServerState {
-            _client_capabilities: ClientCapabilities {},
+            _client_capabilities: ClientCapabilities::default(),
             is_client_initialized: true,
             notification_sender: notification_sender,
             trace: TraceValue::Off,
