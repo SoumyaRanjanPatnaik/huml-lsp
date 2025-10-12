@@ -27,7 +27,7 @@ pub struct Request {
     id: Integer,
     /// The specific method and parameters for this request.
     #[serde(flatten)]
-    method: RequestMethods,
+    method: RequestMethod,
 }
 
 impl Request {
@@ -38,7 +38,7 @@ impl Request {
 
     /// Returns a reference to the enum that holds the specific method and parameters
     /// of this request.
-    pub fn method(&self) -> &RequestMethods {
+    pub fn method(&self) -> &RequestMethod {
         &self.method
     }
 }
@@ -50,7 +50,7 @@ impl Request {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "method", content = "params")]
-pub enum RequestMethods {
+pub enum RequestMethod {
     /// The `initialize` request is the first request sent from the client to the server.
     /// It is used to negotiate capabilities and initialize the server session.
     ///

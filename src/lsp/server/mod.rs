@@ -14,7 +14,7 @@ use crate::lsp::{
         ClientServerNotification,
         trace::{LogTraceParams, SetTraceParams, TraceValue},
     },
-    request::{InitializeParams, Request, RequestMethods},
+    request::{InitializeParams, Request, RequestMethod},
     response::{ResponseMessage, ResponsePayload, ResponseResult, initialize::InitializeResult},
     server::{state::InitializedServerState, writer::initialize_notification_loop},
 };
@@ -126,8 +126,8 @@ impl Server {
     /// It returns a `ResponseMessage` to be sent back to the client.
     pub fn handle_request(&mut self, req: Request) -> Result<ResponseMessage, ServerError> {
         let response_payload = match req.method() {
-            RequestMethods::Initialize(params) => self.handle_initialize_req(params),
-            RequestMethods::Shutdown => self.handle_shutdown_req(),
+            RequestMethod::Initialize(params) => self.handle_initialize_req(params),
+            RequestMethod::Shutdown => self.handle_shutdown_req(),
         };
         Ok(ResponseMessage::new_for(req, response_payload))
     }
