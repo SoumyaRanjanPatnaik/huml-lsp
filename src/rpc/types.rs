@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 // Define type aliases for all the base types
 pub type Integer = i32;
-pub type UInteger = u32;
+pub type UInteger = usize;
 pub type Decimal = u64;
 pub type LSPArray = Vec<LSPAny>;
 pub type LSPObject = HashMap<String, LSPAny>;

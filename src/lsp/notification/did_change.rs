@@ -33,3 +33,13 @@ pub struct TextDocumentContentChangeEvent {
     range: Range,
     text: String,
 }
+
+impl TextDocumentContentChangeEvent {
+    pub fn range(&self) -> Range {
+        self.range
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+}

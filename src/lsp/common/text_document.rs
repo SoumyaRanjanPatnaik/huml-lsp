@@ -130,11 +130,11 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn line(&self) -> u32 {
+    pub fn line(&self) -> usize {
         self.line
     }
 
-    pub fn character(&self) -> u32 {
+    pub fn character(&self) -> usize {
         self.character
     }
 }
