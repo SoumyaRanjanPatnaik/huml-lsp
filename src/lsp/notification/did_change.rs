@@ -30,12 +30,12 @@ impl DidChangeTextDocumentParams {
 ///  See [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentContentChangeEvent)
 #[derive(Deserialize, Debug)]
 pub struct TextDocumentContentChangeEvent {
-    range: Range,
+    range: Option<Range>,
     text: String,
 }
 
 impl TextDocumentContentChangeEvent {
-    pub fn range(&self) -> Range {
+    pub fn range(&self) -> Option<Range> {
         self.range
     }
 

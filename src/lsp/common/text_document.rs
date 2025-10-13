@@ -42,6 +42,7 @@ impl<'a> TextDocumentItem<'a> {
 /// An item to transfer a text document from the client to the server.
 ///
 /// A text document is immutable
+#[derive(Clone, Debug)]
 pub struct TextDocumentItemOwned {
     /// The text document's URI.
     uri: String,
@@ -58,6 +59,15 @@ pub struct TextDocumentItemOwned {
 }
 
 impl TextDocumentItemOwned {
+    pub fn new(uri: String, language_id: String, version: Integer, text: String) -> Self {
+        Self {
+            uri,
+            language_id,
+            version,
+            text,
+        }
+    }
+
     pub fn uri(&self) -> &str {
         &self.uri
     }
@@ -72,6 +82,14 @@ impl TextDocumentItemOwned {
 
     pub fn text(&self) -> &str {
         &self.text
+    }
+
+    pub fn as_parts(&self) -> (&str, &str, i32, &str) {
+        (self.uri(), self.language_id(), self.version(), self.text())
+    }
+
+    pub fn into_parts(self) -> (String, String, i32, String) {
+        (self.uri, self.language_id, self.version, self.text)
     }
 }
 

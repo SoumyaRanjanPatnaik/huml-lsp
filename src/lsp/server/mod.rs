@@ -19,7 +19,10 @@ use crate::lsp::{
     },
     request::{InitializeParams, Request, RequestMethod},
     response::{ResponseMessage, ResponsePayload, ResponseResult, initialize::InitializeResult},
-    server::{state::InitializedServerState, writer::initialize_notification_loop},
+    server::{
+        state::{InitializedServerState, LineSeperatedDocument},
+        writer::initialize_notification_loop,
+    },
 };
 use std::{
     io::{Write, stdout},
@@ -188,7 +191,7 @@ impl Server {
                     .position(|doc| doc.borrow_full_document().uri() == opened_document_item.uri());
 
                 match existing_doc_position {
-                    Some(idx) => documents[idx] = opened_document_item.into(),
+                    Some(idx) => documents[idx] = LineSeperatedDocument::from(opened_document_item),
                     None => todo!(),
                 };
             }
@@ -198,15 +201,48 @@ impl Server {
 
     /// Handles the `textDocument/didChange` notification
     pub fn handle_did_change(&mut self, params: DidChangeTextDocumentParams) {
-        match self {
-            Self::Initialized(InitializedServerState { documents, .. }) => {
-                // Update document if exists
-                documents
-                    .iter_mut()
-                    .find(|doc| doc.borrow_full_document().uri() == params.text_document().uri());
-            }
-            _ => panic!("Cannot handle text document notifications when server not initialized"),
-        }
+        let InitializedServerState { documents, .. } = self
+            .as_mut_initialized()
+            .expect("Cannot handle text document notifications when server not initialized");
+
+        // Update document if exists
+        let Some(document_lines) = documents
+            .iter_mut()
+            .find(|doc| doc.borrow_full_document().uri() == params.text_document().uri())
+        else {
+            return;
+        };
+
+        // Metadata required for constructing the new TextDocumentItemOwned object
+        let (uri, language_id, ..) = document_lines.borrow_full_document().clone().into_parts();
+        let updated_version = params.text_document().version();
+        let text_changes_recieved = params.content_changes().text();
+
+        // Get the range of text changed
+        let Some(range) = params.content_changes().range() else {
+            // Handle full document update if range is None
+            let updated_full_document = TextDocumentItemOwned::new(
+                uri.to_string(),
+                language_id.to_string(),
+                updated_version,
+                text_changes_recieved.to_string(),
+            );
+            *document_lines = LineSeperatedDocument::from(updated_full_document);
+            return;
+        };
+
+        let mut diff_lines: Vec<_> = text_changes_recieved.lines().map(String::from).collect();
+
+        let diff_applied_text_document =
+            document_lines.apply_diff_to_documennt(range, &mut diff_lines);
+
+        let updated_text_document_item = TextDocumentItemOwned::new(
+            uri.to_string(),
+            language_id.to_string(),
+            updated_version,
+            diff_applied_text_document,
+        );
+        *document_lines = LineSeperatedDocument::from(updated_text_document_item)
     }
 
     /// The main entry point for dispatching all incoming notifications from the client.
@@ -223,7 +259,7 @@ impl Server {
 
             // Text Document Related Notifications
             ClientServerNotification::DidOpen(document_sync) => self.handle_did_open(document_sync),
-            ClientServerNotification::DidChange(did_change_params) => todo!(),
+            ClientServerNotification::DidChange(params) => self.handle_did_change(params),
         }
         Ok(())
     }
