@@ -231,10 +231,8 @@ impl Server {
             return;
         };
 
-        let mut diff_lines: Vec<_> = text_changes_recieved.lines().map(String::from).collect();
-
         let diff_applied_text_document =
-            document_lines.apply_diff_to_documennt(range, &mut diff_lines);
+            document_lines.rpply_diff_to_document(range, text_changes_recieved);
 
         let updated_text_document_item = TextDocumentItemOwned::new(
             uri.to_string(),

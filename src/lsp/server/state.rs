@@ -29,42 +29,34 @@ impl LineSeperatedDocument {
         self.into_heads().full_document
     }
 
-    pub(super) fn apply_diff_to_documennt(
-        &self,
-        range: Range,
-        diff_lines: &mut Vec<String>,
-    ) -> String {
+    pub fn apply_diff_to_document(&self, range: Range, replace_with: &str) -> String {
         let (start_line, start_pos) = (range.start().line(), range.start().character());
         let (end_line, end_pos) = (range.end().line(), range.end().character());
         self.with_lines(|lines| {
             if start_line > lines.len() || end_line > lines.len() {
-                panic!("Document out of sync. Changes suggested outside range")
+                panic!("Document out of sync. Ch&anges suggested outside range")
             }
 
             let before_start = &lines[..start_line];
             let stale_lines = &lines[start_line..=end_line];
             let after_end = &lines[(end_line + 1)..];
 
-            // Add the unchanged bits from stale first line into the updated first line
-            if let Some(stale_line_first) = stale_lines.first()
-                && let Some(updated_line_first) = diff_lines.first_mut()
-            {
-                *updated_line_first =
-                    stale_line_first[..start_pos].to_string() + updated_line_first;
+            let mut changed_region = String::new();
+
+            // Add the unchanged bits from stale first line into
+            if let Some(stale_line_first) = stale_lines.first() {
+                changed_region.push_str(&stale_line_first[..start_pos]);
             }
+
+            changed_region.push_str(replace_with);
 
             // Push unchanged bits fromo the stale last line into the updated last line
-            if let Some(stale_line_last) = stale_lines.first()
-                && let Some(updated_line_last) = diff_lines.last_mut()
-            {
-                updated_line_last.push_str(&stale_line_last[end_pos..]);
+            if let Some(stale_line_last) = stale_lines.first() {
+                changed_region.push_str(&stale_line_last[end_pos..]);
             }
 
-            // Vector containing string slices from the diff_lines array
-            let diff_lines_slice: Vec<_> = diff_lines.iter().map(|line| line.as_str()).collect();
-
             // Combine the channged and the unchanged parts of the documeent
-            let updated_document = [before_start, &diff_lines_slice[..], after_end]
+            let updated_document = [before_start, &[&changed_region], after_end]
                 .concat()
                 .join("\r\n");
 
