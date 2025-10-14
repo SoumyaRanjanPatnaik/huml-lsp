@@ -232,7 +232,7 @@ impl Server {
         };
 
         let diff_applied_text_document =
-            document_lines.rpply_diff_to_document(range, text_changes_recieved);
+            document_lines.apply_diff_to_document(range, text_changes_recieved);
 
         let updated_text_document_item = TextDocumentItemOwned::new(
             uri.to_string(),

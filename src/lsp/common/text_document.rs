@@ -59,7 +59,7 @@ pub struct TextDocumentItemOwned {
 }
 
 impl TextDocumentItemOwned {
-    pub fn new(uri: String, language_id: String, version: Integer, text: String) -> Self {
+    pub const fn new(uri: String, language_id: String, version: Integer, text: String) -> Self {
         Self {
             uri,
             language_id,
@@ -148,6 +148,10 @@ pub struct Position {
 }
 
 impl Position {
+    pub fn new(line: UInteger, character: UInteger) -> Self {
+        Self { line, character }
+    }
+
     pub fn line(&self) -> usize {
         self.line
     }
@@ -165,6 +169,10 @@ pub struct Range {
 }
 
 impl Range {
+    pub fn new(start: Position, end: Position) -> Self {
+        Self { start, end }
+    }
+
     pub fn start(&self) -> Position {
         self.start
     }
