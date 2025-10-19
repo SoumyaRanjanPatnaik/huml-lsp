@@ -77,3 +77,125 @@ impl From<LogTraceParams> for ServerClientNotification {
         Self::LogTrace(v)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_deserialize_initialized_notification() {
+        let json_input = r#"{
+          "jsonrpc": "2.0",
+          "method": "initialized",
+          "params": {}
+        }"#;
+
+        let notification: ClientServerNotification = serde_json::from_str(json_input).unwrap();
+        assert!(matches!(
+            notification,
+            ClientServerNotification {
+                variant: ClientServerNotificationVariant::Initialized(..),
+                _jsonrpc: "2.0"
+            }
+        ))
+    }
+
+    #[test]
+    fn should_deserialize_set_trace() {
+        let json_input = r#"{
+          "jsonrpc": "2.0",
+          "method": "$/setTrace",
+          "params": {
+            "value": "verbose"
+          }
+        }"#;
+
+        let notification: ClientServerNotification = serde_json::from_str(json_input).unwrap();
+        assert!(matches!(
+            notification,
+            ClientServerNotification {
+                variant: ClientServerNotificationVariant::SetTrace(..),
+                _jsonrpc: "2.0"
+            }
+        ))
+    }
+
+    #[test]
+    fn should_deserialize_did_open() {
+        let json_input = r#"{
+          "jsonrpc": "2.0",
+          "method": "textDocument/didOpen",
+          "params": {
+            "textDocument": {
+              "languageId": "huml",
+              "text": "hello world\n",
+              "uri": "file:///tmp/test.huml",
+              "version": 0
+            }
+          }
+        }"#;
+
+        let json_bytes = json_input.as_bytes();
+
+        let notification: ClientServerNotification = serde_json::from_slice(json_bytes).unwrap();
+
+        assert!(matches!(
+            notification,
+            ClientServerNotification {
+                variant: ClientServerNotificationVariant::DidOpen(..),
+                _jsonrpc: "2.0"
+            }
+        ));
+    }
+
+    #[test]
+    fn should_deserialize_did_change() {
+        let json_input = r#"{
+          "jsonrpc": "2.0",
+          "method": "textDocument/didChange",
+          "params": {
+            "contentChanges": [
+              {
+                "text": "hello world \n"
+              }
+            ],
+            "textDocument": {
+              "uri": "file:///tmp/test.huml",
+              "version": 4
+            }
+          }
+        }"#;
+
+        let json_bytes = json_input.as_bytes();
+
+        let notification: ClientServerNotification = serde_json::from_slice(json_bytes).unwrap();
+
+        assert!(matches!(
+            notification,
+            ClientServerNotification {
+                variant: ClientServerNotificationVariant::DidChange(..),
+                _jsonrpc: "2.0"
+            }
+        ));
+    }
+
+    #[test]
+    fn should_deserialize_exit_notification() {
+        let json_input = r#"{
+          "jsonrpc": "2.0",
+          "method": "exit"
+        }"#;
+
+        let json_bytes = json_input.as_bytes();
+
+        let notification: ClientServerNotification = serde_json::from_slice(json_bytes).unwrap();
+
+        assert!(matches!(
+            notification,
+            ClientServerNotification {
+                variant: ClientServerNotificationVariant::Exit,
+                _jsonrpc: "2.0"
+            }
+        ));
+    }
+}

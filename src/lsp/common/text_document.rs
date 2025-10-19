@@ -42,7 +42,8 @@ impl<'a> TextDocumentItem<'a> {
 /// An item to transfer a text document from the client to the server.
 ///
 /// A text document is immutable
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct TextDocumentItemOwned {
     /// The text document's URI.
     uri: String,
@@ -179,5 +180,103 @@ impl Range {
 
     pub fn end(&self) -> Position {
         self.end
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*; // Import everything from the parent module.
+    use serde_json;
+
+    #[test]
+    fn should_deserialize_text_document_item() {
+        let json_input = r#"{
+            "uri": "file:///path/to/file.txt",
+            "languageId": "plaintext",
+            "version": 7,
+            "text": "Hello, world!"
+        }"#;
+
+        let deserialized: TextDocumentItem =
+            serde_json::from_str(json_input).expect("Deserialization failed");
+
+        assert_eq!(deserialized.uri(), "file:///path/to/file.txt");
+        assert_eq!(deserialized.language_id(), "plaintext");
+        assert_eq!(deserialized.version(), 7);
+        assert_eq!(deserialized.text(), "Hello, world!");
+    }
+
+    #[test]
+    fn should_deserialize_text_document_item_owned() {
+        let json_input = r#"{
+            "uri": "file:///path/to/another_file.rs",
+            "languageId": "rust",
+            "version": 42,
+            "text": "fn main() {}"
+        }"#;
+
+        let deserialized: TextDocumentItemOwned =
+            serde_json::from_str(json_input).expect("Deserialization failed");
+
+        assert_eq!(deserialized.uri(), "file:///path/to/another_file.rs");
+        assert_eq!(deserialized.language_id(), "rust");
+        assert_eq!(deserialized.version(), 42);
+        assert_eq!(deserialized.text(), "fn main() {}");
+    }
+
+    #[test]
+    fn should_deserialize_text_document_identifier() {
+        let json_input = r#"{
+            "uri": "file:///path/to/doc.huml"
+        }"#;
+
+        let deserialized: TextDocumentIdentifier =
+            serde_json::from_str(json_input).expect("Deserialization failed");
+
+        assert_eq!(deserialized.uri(), "file:///path/to/doc.huml");
+    }
+
+    #[test]
+    fn should_deserialize_versioned_text_document_identifier() {
+        // Note: The `version` field is at the same level as `uri` due to `#[serde(flatten)]`
+        let json_input = r#"{
+            "uri": "file:///path/to/versioned_doc.json",
+            "version": 12
+        }"#;
+
+        let deserialized: VersionedTextDocumentIdentifier =
+            serde_json::from_str(json_input).expect("Deserialization failed");
+
+        assert_eq!(deserialized.uri(), "file:///path/to/versioned_doc.json");
+        assert_eq!(deserialized.version(), 12);
+    }
+
+    #[test]
+    fn should_deserialize_position() {
+        let json_input = r#"{
+            "line": 10,
+            "character": 25
+        }"#;
+
+        let deserialized: Position =
+            serde_json::from_str(json_input).expect("Deserialization failed");
+
+        assert_eq!(deserialized.line(), 10);
+        assert_eq!(deserialized.character(), 25);
+    }
+
+    #[test]
+    fn should_deserialize_range() {
+        let json_input = r#"{
+            "start": { "line": 5, "character": 10 },
+            "end": { "line": 5, "character": 20 }
+        }"#;
+
+        let deserialized: Range = serde_json::from_str(json_input).expect("Deserialization failed");
+
+        assert_eq!(deserialized.start().line(), 5);
+        assert_eq!(deserialized.start().character(), 10);
+        assert_eq!(deserialized.end().line(), 5);
+        assert_eq!(deserialized.end().character(), 20);
     }
 }
