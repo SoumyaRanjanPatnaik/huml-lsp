@@ -25,10 +25,14 @@ use serde::Deserialize;
 pub struct Request<'a> {
     /// The unique identifier for the request, used to match it with a response.
     id: Integer,
+
     /// The specific method and parameters for this request.
     #[serde(borrow)]
     #[serde(flatten)]
     method: RequestMethod<'a>,
+
+    #[serde(rename = "jsonrpc")]
+    _jsonrpc: &'a str,
 }
 
 impl<'a> Request<'a> {

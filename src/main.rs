@@ -30,40 +30,42 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     log("Started Server. Waiting for Messages...");
     for message_result in rpc_reader {
-        // Debug logging to inspect requests
-        #[cfg(debug_assertions)]
-        {
-            let message_json = &message_result
-                .as_ref()
-                .map(|msg| {
-                    let json_value = jsonrpc_decode::<Value>(msg).unwrap();
-                    serde_json::to_string_pretty(&json_value).unwrap()
-                })
-                .unwrap();
-            // Log the message for inspection
-            log(&format!("Message: {message_json}",));
-        }
-
-        // Parse / recieve the message
-        let message: RecievedMessage = match message_result.as_ref().map(|msg| jsonrpc_decode(msg))
-        {
-            Ok(Ok(msg)) => msg,
-            Ok(Err(_)) => continue,
-            Err(decode_err) => {
-                log(&format!("Error parsing message: {decode_err}"));
-                panic!("Failed to parse message");
+        let message_string = match message_result {
+            Ok(s) => s,
+            Err(e) => {
+                log(&format!("Error reading from stream: {}", e));
+                continue; // Skip to the next message on read error
             }
         };
 
-        let response = match message {
+        // Debug logging to inspect requests
+        #[cfg(debug_assertions)]
+        {
+            if let Ok(json_value) = jsonrpc_decode::<Value>(&message_string) {
+                if let Ok(pretty_json) = serde_json::to_string_pretty(&json_value) {
+                    log(&format!("Message: {}", pretty_json));
+                }
+            }
+        }
+
+        // Parse / recieve the message
+        let parsed_message: RecievedMessage =
+            match jsonrpc_decode::<RecievedMessage>(&message_string) {
+                Ok(msg) => msg,
+                Err(decode_err) => {
+                    log(&format!("Error parsing message: {decode_err}"));
+                    panic!("Failed to parse message");
+                }
+            };
+
+        let response = match parsed_message {
             RecievedMessage::Request(req) => server.handle_request(&req),
             RecievedMessage::Notification(notification) => {
-                server.handle_notification(notification)?;
+                server.handle_notification(notification).unwrap();
                 continue;
             }
         };
 
-        // Hanndle the request
         let encoded_response = match response.map(|msg| jsonrpc_encode(&msg)) {
             Ok(Ok(res)) => res,
             Err(e) => {
@@ -78,9 +80,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         log(encoded_response.as_ref());
 
-        // Lock stdin and write output
         let mut stdout_writer = io::stdout().lock();
-        stdout_writer.write_all(encoded_response.as_ref())?;
+        stdout_writer.write_all(encoded_response.as_bytes())?;
         stdout_writer.flush()?;
     }
     Ok(())

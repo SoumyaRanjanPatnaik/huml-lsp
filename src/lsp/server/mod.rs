@@ -12,7 +12,7 @@ use crate::lsp::{
     common::text_document::TextDocumentItemOwned,
     error::ServerError,
     notification::{
-        ClientServerNotification,
+        ClientServerNotification, ClientServerNotificationVariant,
         did_change::DidChangeTextDocumentParams,
         did_open::DidOpenTextDocumentParams,
         trace::{LogTraceParams, SetTraceParams, TraceValue},
@@ -265,14 +265,18 @@ impl Server {
         &mut self,
         notification: ClientServerNotification,
     ) -> Result<(), ServerError> {
-        match notification {
-            ClientServerNotification::Initialized(_) => self.handle_initialized_notification(),
-            ClientServerNotification::Exit => process::exit(0),
-            ClientServerNotification::SetTrace(params) => self.handle_set_trace(params),
+        match notification.into_variant() {
+            ClientServerNotificationVariant::Initialized(_) => {
+                self.handle_initialized_notification()
+            }
+            ClientServerNotificationVariant::Exit => process::exit(0),
+            ClientServerNotificationVariant::SetTrace(params) => self.handle_set_trace(params),
 
             // Text Document Related Notifications
-            ClientServerNotification::DidOpen(document_sync) => self.handle_did_open(document_sync),
-            ClientServerNotification::DidChange(params) => self.handle_did_change(params),
+            ClientServerNotificationVariant::DidChange(params) => self.handle_did_change(params),
+            ClientServerNotificationVariant::DidOpen(document_sync) => {
+                self.handle_did_open(document_sync)
+            }
         }
         Ok(())
     }

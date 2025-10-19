@@ -16,10 +16,27 @@ use crate::lsp::notification::{
 };
 use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ClientServerNotification<'a> {
+    #[serde(flatten)]
+    #[serde(borrow)]
+    variant: ClientServerNotificationVariant<'a>,
+
+    #[serde(rename = "jsonrpc")]
+    _jsonrpc: &'a str,
+}
+
+impl<'a> ClientServerNotification<'a> {
+    pub fn into_variant(self) -> ClientServerNotificationVariant<'a> {
+        self.variant
+    }
+}
+
 /// Represents notifications sent from the client (e.g., editor) to the language server.
 #[derive(Deserialize, Debug)]
 #[serde(tag = "method", content = "params")]
-pub enum ClientServerNotification<'a> {
+pub enum ClientServerNotificationVariant<'a> {
     /// The `initialized` notification is sent from the client to the server after the client
     /// has received and successfully processed the [`Response Result`]
     /// It signals that the server can now send notifications and requests to the client.
