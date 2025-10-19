@@ -183,6 +183,11 @@ impl Server {
     pub fn handle_did_open(&mut self, params: DidOpenTextDocumentParams) {
         let opened_document_item: TextDocumentItemOwned = params.into_text_document();
 
+        let opened_document_uri = opened_document_item.uri().to_string();
+        let log_verbose = format!("{:?}", opened_document_item);
+        let log_message = format!("Opening document {opened_document_uri}");
+        self.log_message(log_message, Some(log_verbose));
+
         match self {
             Self::Initialized(InitializedServerState { documents, .. }) => {
                 // Replace document if already exists
@@ -190,9 +195,10 @@ impl Server {
                     .iter()
                     .position(|doc| doc.borrow_full_document().uri() == opened_document_item.uri());
 
+                let line_seperated_docuemnt = LineSeperatedDocument::from(opened_document_item);
                 match existing_doc_position {
-                    Some(idx) => documents[idx] = LineSeperatedDocument::from(opened_document_item),
-                    None => todo!(),
+                    Some(idx) => documents[idx] = line_seperated_docuemnt,
+                    None => documents.push(line_seperated_docuemnt),
                 };
             }
             _ => panic!("Cannot handle text document notifications when server not initialized"),
@@ -216,23 +222,32 @@ impl Server {
         // Metadata required for constructing the new TextDocumentItemOwned object
         let (uri, language_id, ..) = document_lines.borrow_full_document().clone().into_parts();
         let updated_version = params.text_document().version();
-        let text_changes_recieved = params.content_changes().text();
+        // let text_changes_recieved = params.content_changes().text();
+        //
+        // // Get the range of text changed
+        // let Some(range) = params.content_changes().range() else {
+        //     // Handle full document update if range is None
+        //     let updated_full_document = TextDocumentItemOwned::new(
+        //         uri.to_string(),
+        //         language_id.to_string(),
+        //         updated_version,
+        //         text_changes_recieved.to_string(),
+        //     );
+        //     *document_lines = LineSeperatedDocument::from(updated_full_document);
+        //     return;
+        // };
 
-        // Get the range of text changed
-        let Some(range) = params.content_changes().range() else {
-            // Handle full document update if range is None
-            let updated_full_document = TextDocumentItemOwned::new(
-                uri.to_string(),
-                language_id.to_string(),
-                updated_version,
-                text_changes_recieved.to_string(),
-            );
-            *document_lines = LineSeperatedDocument::from(updated_full_document);
-            return;
-        };
+        let change_diff: Vec<_> = params
+            .content_changes()
+            .iter()
+            .filter_map(|change| {
+                let range_opt = change.range();
+                let text = change.text();
+                range_opt.map(|range| (range, text))
+            })
+            .collect();
 
-        let diff_applied_text_document =
-            document_lines.apply_diff_to_document(range, text_changes_recieved);
+        let diff_applied_text_document = document_lines.apply_diff_to_document(&change_diff);
 
         let updated_text_document_item = TextDocumentItemOwned::new(
             uri.to_string(),
@@ -269,14 +284,21 @@ impl Server {
     ///
     /// [`$/logTrace`]: crate::lsp::notification::ServerClientNotification::LogTrace
     fn log_message(&mut self, message: String, verbose: Option<String>) {
-        self.as_mut_initialized().inspect(|state| {
-            let log_params = match state.trace {
-                TraceValue::Off => return,
-                TraceValue::Message => LogTraceParams::new(message, None),
-                TraceValue::Verbose => LogTraceParams::new(message, verbose),
-            };
-            let _ = state.notification_sender.send(log_params.into());
-        });
+        let state = self
+            .as_mut_initialized()
+            .expect("Logging shouldn't happen if the server is not initialized");
+
+        writeln!(std::io::stderr(), "Sending log").unwrap();
+        // let log_params = match state.trace {
+        //     TraceValue::Off => return,
+        //     TraceValue::Message => LogTraceParams::new(message, None),
+        //     TraceValue::Verbose => LogTraceParams::new(message, verbose),
+        // };
+        let log_params = LogTraceParams::new(message, verbose);
+        let _ = state
+            .notification_sender
+            .send(log_params.into())
+            .expect("Notification send failed");
     }
 }
 

@@ -9,17 +9,18 @@ use crate::lsp::common::text_document::{Range, VersionedTextDocumentIdentifier};
 /// [`textDocument/didChange`]: crate::lsp::notification::ClientServerNotification::DidChange
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct DidChangeTextDocumentParams {
+pub struct DidChangeTextDocumentParams<'a> {
     text_document: VersionedTextDocumentIdentifier,
-    content_changes: TextDocumentContentChangeEvent,
+    #[serde(borrow)]
+    content_changes: Vec<TextDocumentContentChangeEvent<'a>>,
 }
 
-impl DidChangeTextDocumentParams {
+impl<'a> DidChangeTextDocumentParams<'a> {
     pub fn text_document(&self) -> &VersionedTextDocumentIdentifier {
         &self.text_document
     }
 
-    pub fn content_changes(&self) -> &TextDocumentContentChangeEvent {
+    pub fn content_changes(&self) -> &Vec<TextDocumentContentChangeEvent<'a>> {
         &self.content_changes
     }
 }
@@ -29,12 +30,12 @@ impl DidChangeTextDocumentParams {
 ///
 ///  See [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentContentChangeEvent)
 #[derive(Deserialize, Debug)]
-pub struct TextDocumentContentChangeEvent {
+pub struct TextDocumentContentChangeEvent<'a> {
     range: Option<Range>,
-    text: String,
+    text: &'a str,
 }
 
-impl TextDocumentContentChangeEvent {
+impl<'a> TextDocumentContentChangeEvent<'a> {
     pub fn range(&self) -> Option<Range> {
         self.range
     }

@@ -29,39 +29,43 @@ impl LineSeperatedDocument {
         self.into_heads().full_document
     }
 
-    pub fn apply_diff_to_document(&self, range: Range, replace_with: &str) -> String {
-        let (start_line, start_pos) = (range.start().line(), range.start().character());
-        let (end_line, end_pos) = (range.end().line(), range.end().character());
-        self.with_lines(|lines| {
-            if start_line > lines.len() || end_line > lines.len() {
-                panic!("Document out of sync. Changes suggested outside range")
-            }
+    pub fn apply_diff_to_document(&self, diff: &[(Range, &str)]) -> String {
+        let mut document = String::new();
+        for (range, replace_with) in diff {
+            let (start_line, start_pos) = (range.start().line(), range.start().character());
+            let (end_line, end_pos) = (range.end().line(), range.end().character());
+            document = self.with_lines(|lines| {
+                if start_line > lines.len() || end_line > lines.len() {
+                    panic!("Document out of sync. Changes suggested outside range")
+                }
 
-            let before_start = &lines[..start_line];
-            let stale_lines = &lines[start_line..=end_line];
-            let after_end = &lines[(end_line + 1)..];
+                let before_start = &lines[..start_line];
+                let stale_lines = &lines[start_line..=end_line];
+                let after_end = &lines[(end_line + 1)..];
 
-            let mut changed_region = String::new();
+                let mut changed_region = String::new();
 
-            // Add the unchanged bits from stale first line into
-            if let Some(stale_line_first) = stale_lines.first() {
-                changed_region.push_str(&stale_line_first[..start_pos]);
-            }
+                // Add the unchanged bits from stale first line into
+                if let Some(stale_line_first) = stale_lines.first() {
+                    changed_region.push_str(&stale_line_first[..start_pos]);
+                }
 
-            changed_region.push_str(replace_with);
+                changed_region.push_str(replace_with);
 
-            // Push unchanged bits fromo the stale last line into the updated last line
-            if let Some(stale_line_last) = stale_lines.last() {
-                changed_region.push_str(&stale_line_last[end_pos..]);
-            }
+                // Push unchanged bits fromo the stale last line into the updated last line
+                if let Some(stale_line_last) = stale_lines.last() {
+                    changed_region.push_str(&stale_line_last[end_pos..]);
+                }
 
-            // Combine the channged and the unchanged parts of the documeent
-            let updated_document = [before_start, &[&changed_region], after_end]
-                .concat()
-                .join("\n");
+                // Combine the channged and the unchanged parts of the documeent
+                let updated_document = [before_start, &[&changed_region], after_end]
+                    .concat()
+                    .join("\n");
 
-            updated_document
-        })
+                updated_document
+            })
+        }
+        document
     }
 }
 
@@ -205,7 +209,8 @@ i work at Torchwood."#;
         let document = build_document();
         let line_seperated_document = LineSeperatedDocument::from(document);
         let (range, expected_text) = generate_op(substr, replace_with);
-        let updated_text = line_seperated_document.apply_diff_to_document(range, replace_with);
+        let diff = [(range, replace_with)];
+        let updated_text = line_seperated_document.apply_diff_to_document(&diff);
         (updated_text, expected_text)
     }
 

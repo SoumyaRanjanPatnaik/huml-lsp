@@ -19,13 +19,13 @@ use serde::{Deserialize, Serialize};
 /// Represents notifications sent from the client (e.g., editor) to the language server.
 #[derive(Deserialize, Debug)]
 #[serde(tag = "method", content = "params")]
-#[serde(rename_all = "camelCase")]
 pub enum ClientServerNotification<'a> {
     /// The `initialized` notification is sent from the client to the server after the client
     /// has received and successfully processed the [`Response Result`]
     /// It signals that the server can now send notifications and requests to the client.
     ///
     /// [`Response Result`]: crate::lsp::response::ResponseResult::Initialize
+    #[serde(rename = "initialized")]
     Initialized(InitializedParams),
 
     /// The `$/setTrace` notification is sent from the client to the server to control the
@@ -41,8 +41,9 @@ pub enum ClientServerNotification<'a> {
 
     /// The document open notification is sent from the client to the server to signal
     /// newly opened text documents.
+    #[serde(borrow)]
     #[serde(rename = "textDocument/didChange")]
-    DidChange(DidChangeTextDocumentParams),
+    DidChange(DidChangeTextDocumentParams<'a>),
 
     /// The `exit` notification is sent from the client to the server to ask it to exit.
     /// This notification must only be sent after a `shutdown` request has been successfully
@@ -50,6 +51,7 @@ pub enum ClientServerNotification<'a> {
     ///
     /// [Server]: crate::lsp::server::Server
     /// [Server::Shutdown]: crate::lsp::server::Server::Shutdown
+    #[serde(rename = "exit")]
     Exit,
 }
 
