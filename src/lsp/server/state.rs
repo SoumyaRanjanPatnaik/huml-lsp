@@ -41,7 +41,10 @@ impl LineSeperatedDocument {
 
                 let before_start = &lines[..start_line];
                 let stale_lines = &lines[start_line..=end_line];
-                let after_end = &lines[(end_line + 1)..];
+
+                // Ignore the empty eof line
+                let eof_pos = lines.len() - 1;
+                let after_end = &lines.get((end_line + 1)..eof_pos).unwrap_or(&[]);
 
                 let mut changed_region = String::new();
 
@@ -73,7 +76,12 @@ impl From<TextDocumentItemOwned> for LineSeperatedDocument {
     fn from(value: TextDocumentItemOwned) -> Self {
         LineSeperatedDocumentBuilder {
             full_document: value,
-            lines_builder: |document| document.text().lines().collect(),
+            lines_builder: |document| {
+                let mut lines: Vec<_> = document.text().lines().collect();
+                // Add an empty eof line
+                lines.push("");
+                lines
+            },
         }
         .build()
     }
