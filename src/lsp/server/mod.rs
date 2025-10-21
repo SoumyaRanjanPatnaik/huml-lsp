@@ -107,8 +107,12 @@ impl Server {
         }
 
         // Initialize notification writer
-        let notification_sender =
-            initialize_notification_loop(|msg| write!(stdout().lock(), "{msg}"));
+        let notification_sender = initialize_notification_loop(|msg| {
+            let mut writer = io::stdout().lock();
+            write!(writer, "{msg}")?;
+            writer.flush()?;
+            Ok(())
+        });
 
         *self = Server::Initialized(InitializedServerState {
             _client_capabilities: params.capabilities().clone(),
