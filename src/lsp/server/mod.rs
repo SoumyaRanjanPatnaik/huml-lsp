@@ -187,10 +187,13 @@ impl Server {
     pub fn handle_did_open(&mut self, params: DidOpenTextDocumentParams) {
         let opened_document_item: TextDocumentItemOwned = params.into_text_document();
 
-        let opened_document_uri = opened_document_item.uri().to_string();
-        let log_verbose = format!("{:?}", opened_document_item);
-        let log_message = format!("Opening document {opened_document_uri}");
-        self.log_message(log_message, Some(log_verbose));
+        #[cfg(debug_assertions)]
+        {
+            let opened_document_uri = opened_document_item.uri().to_string();
+            let log_verbose = format!("{:?}", opened_document_item);
+            let log_message = format!("Opening document {opened_document_uri}");
+            self.log_message(log_message, Some(log_verbose));
+        }
 
         match self {
             Self::Initialized(InitializedServerState { documents, .. }) => {
@@ -245,7 +248,17 @@ impl Server {
             updated_version,
             diff_applied_text_document,
         );
-        *document_lines = LineSeperatedDocument::from(updated_text_document_item)
+        *document_lines = LineSeperatedDocument::from(updated_text_document_item);
+
+        #[cfg(debug_assertions)]
+        {
+            let document = document_lines.borrow_full_document();
+            let updated_text = document.text();
+            // Send log with the updated document state
+            let log_verbose = format!("{updated_text}");
+            let log_message = format!("updated document {uri}");
+            self.log_message(log_message, Some(log_verbose));
+        }
     }
 
     /// The main entry point for dispatching all incoming notifications from the client.
