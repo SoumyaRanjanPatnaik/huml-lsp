@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(msg) => msg,
                 Err(decode_err) => {
                     log(&format!("Error parsing message: {decode_err}"));
-                    panic!("Failed to parse message");
+                    continue;
                 }
             };
 
