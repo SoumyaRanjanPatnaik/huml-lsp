@@ -25,7 +25,7 @@ use crate::lsp::{
     },
 };
 use std::{
-    io::{Write, stdout},
+    io::{self, Write},
     process,
 };
 
@@ -226,20 +226,6 @@ impl Server {
         // Metadata required for constructing the new TextDocumentItemOwned object
         let (uri, language_id, ..) = document_lines.borrow_full_document().clone().into_parts();
         let updated_version = params.text_document().version();
-        // let text_changes_recieved = params.content_changes().text();
-        //
-        // // Get the range of text changed
-        // let Some(range) = params.content_changes().range() else {
-        //     // Handle full document update if range is None
-        //     let updated_full_document = TextDocumentItemOwned::new(
-        //         uri.to_string(),
-        //         language_id.to_string(),
-        //         updated_version,
-        //         text_changes_recieved.to_string(),
-        //     );
-        //     *document_lines = LineSeperatedDocument::from(updated_full_document);
-        //     return;
-        // };
 
         let change_diff: Vec<_> = params
             .content_changes()
@@ -296,13 +282,11 @@ impl Server {
             .as_mut_initialized()
             .expect("Logging shouldn't happen if the server is not initialized");
 
-        writeln!(std::io::stderr(), "Sending log").unwrap();
-        // let log_params = match state.trace {
-        //     TraceValue::Off => return,
-        //     TraceValue::Message => LogTraceParams::new(message, None),
-        //     TraceValue::Verbose => LogTraceParams::new(message, verbose),
-        // };
-        let log_params = LogTraceParams::new(message, verbose);
+        let log_params = match state.trace {
+            TraceValue::Off => return,
+            TraceValue::Message => LogTraceParams::new(message, None),
+            TraceValue::Verbose => LogTraceParams::new(message, verbose),
+        };
         let _ = state
             .notification_sender
             .send(log_params.into())
