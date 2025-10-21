@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde::Deserialize;
 
 use crate::lsp::common::text_document::{Range, VersionedTextDocumentIdentifier};
@@ -10,17 +12,18 @@ use crate::lsp::common::text_document::{Range, VersionedTextDocumentIdentifier};
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct DidChangeTextDocumentParams<'a> {
-    text_document: VersionedTextDocumentIdentifier,
+    #[serde(borrow)]
+    text_document: VersionedTextDocumentIdentifier<'a>,
     #[serde(borrow)]
     content_changes: Vec<TextDocumentContentChangeEvent<'a>>,
 }
 
 impl<'a> DidChangeTextDocumentParams<'a> {
-    pub fn text_document(&self) -> &VersionedTextDocumentIdentifier {
+    pub fn text_document(&self) -> &VersionedTextDocumentIdentifier<'_> {
         &self.text_document
     }
 
-    pub fn content_changes(&self) -> &Vec<TextDocumentContentChangeEvent<'a>> {
+    pub fn content_changes(&self) -> &Vec<TextDocumentContentChangeEvent<'_>> {
         &self.content_changes
     }
 }
@@ -32,7 +35,8 @@ impl<'a> DidChangeTextDocumentParams<'a> {
 #[derive(Deserialize, Debug)]
 pub struct TextDocumentContentChangeEvent<'a> {
     range: Option<Range>,
-    text: &'a str,
+    #[serde(borrow)]
+    text: Cow<'a, str>,
 }
 
 impl<'a> TextDocumentContentChangeEvent<'a> {

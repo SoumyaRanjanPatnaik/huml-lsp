@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::rpc::{Integer, UInteger};
 use serde::{Deserialize, Serialize};
 
@@ -18,7 +20,8 @@ pub struct TextDocumentItem<'a> {
     version: Integer,
 
     /// The content of the opened text document.
-    text: &'a str,
+    #[serde(borrow)]
+    text: Cow<'a, str>,
 }
 
 impl<'a> TextDocumentItem<'a> {
@@ -100,7 +103,7 @@ impl<'a> From<TextDocumentItem<'a>> for TextDocumentItemOwned {
             uri: value.uri().to_owned(),
             language_id: value.language_id().to_owned(),
             version: value.version(),
-            text: value.text.to_owned(),
+            text: value.text.to_string(),
         }
     }
 }
@@ -110,11 +113,11 @@ impl<'a> From<TextDocumentItem<'a>> for TextDocumentItemOwned {
 ///
 /// See [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentIdentifier)
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TextDocumentIdentifier {
-    uri: String,
+pub struct TextDocumentIdentifier<'a> {
+    uri: &'a str,
 }
 
-impl TextDocumentIdentifier {
+impl<'a> TextDocumentIdentifier<'a> {
     pub fn uri(&self) -> &str {
         &self.uri
     }
@@ -125,13 +128,14 @@ impl TextDocumentIdentifier {
 ///
 /// See [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#versionedTextDocumentIdentifier)
 #[derive(Serialize, Deserialize, Debug)]
-pub struct VersionedTextDocumentIdentifier {
+pub struct VersionedTextDocumentIdentifier<'a> {
     #[serde(flatten)]
-    identifier: TextDocumentIdentifier,
+    #[serde(borrow)]
+    identifier: TextDocumentIdentifier<'a>,
     version: Integer,
 }
 
-impl VersionedTextDocumentIdentifier {
+impl<'a> VersionedTextDocumentIdentifier<'a> {
     pub fn version(&self) -> i32 {
         self.version
     }
