@@ -12,7 +12,7 @@ impl Default for ServerCapabilities {
         Self {
             text_document_sync: TextDocumentSyncOptions {
                 open_close: true,
-                change: TextDocumentSyncKind::Full,
+                change: TextDocumentSyncKind::Incremental,
             },
         }
     }
