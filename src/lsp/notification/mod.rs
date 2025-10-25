@@ -6,11 +6,13 @@
 //! - [`ServerClientNotification`]: Notifications sent from the server to the client.
 
 pub mod did_change;
+pub mod did_close;
 pub mod did_open;
 pub mod trace;
 
 use crate::lsp::notification::{
     did_change::DidChangeTextDocumentParams,
+    did_close::DidCloseTextDocumentParams,
     did_open::DidOpenTextDocumentParams,
     trace::{LogTraceParams, SetTraceParams},
 };
@@ -56,11 +58,17 @@ pub enum ClientServerNotificationVariant<'a> {
     #[serde(rename = "textDocument/didOpen")]
     DidOpen(DidOpenTextDocumentParams<'a>),
 
-    /// The document open notification is sent from the client to the server to signal
+    /// The document change notification is sent from the client to the server to signal
     /// newly opened text documents.
     #[serde(borrow)]
     #[serde(rename = "textDocument/didChange")]
     DidChange(DidChangeTextDocumentParams<'a>),
+
+    /// The document close notification is sent from the client to the server to signal
+    /// newly opened text documents.
+    #[serde(borrow)]
+    #[serde(rename = "textDocument/didClose")]
+    DidClose(DidCloseTextDocumentParams<'a>),
 
     /// The `exit` notification is sent from the client to the server to ask it to exit.
     /// This notification must only be sent after a `shutdown` request has been successfully
@@ -191,6 +199,32 @@ mod test {
             notification,
             ClientServerNotification {
                 variant: ClientServerNotificationVariant::DidChange(..),
+                _jsonrpc: "2.0"
+            }
+        ));
+    }
+
+    #[test]
+    fn should_deserialize_did_close() {
+        let json_input = r#"{
+          "jsonrpc": "2.0",
+          "method": "textDocument/didClose",
+          "params": {
+            "textDocument": {
+              "uri": "file:///tmp/test.huml",
+              "version": 4
+            }
+          }
+        }"#;
+
+        let json_bytes = json_input.as_bytes();
+
+        let notification: ClientServerNotification = serde_json::from_slice(json_bytes).unwrap();
+
+        assert!(matches!(
+            notification,
+            ClientServerNotification {
+                variant: ClientServerNotificationVariant::DidClose(..),
                 _jsonrpc: "2.0"
             }
         ));

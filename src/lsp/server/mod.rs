@@ -261,6 +261,26 @@ impl Server {
         }
     }
 
+    /// Handle the [textDocument/didClose] notification
+    ///
+    /// [textDocument/didClose]: crate::lsp::notification::ClientServerNotificationVariant::DidClose
+    fn handle_did_close(
+        &mut self,
+        close_parameters: super::notification::did_close::DidCloseTextDocumentParams<'_>,
+    ) {
+        let InitializedServerState { documents, .. } = self
+            .as_mut_initialized()
+            .expect("Cannot handle text document notifications when server not initialized");
+
+        let Some(closed_doc_position) = documents.iter().position(|doc| {
+            doc.borrow_full_document().uri() == close_parameters.text_document().uri()
+        }) else {
+            return;
+        };
+
+        documents.remove(closed_doc_position);
+    }
+
     /// The main entry point for dispatching all incoming notifications from the client.
     ///
     /// It takes a `ClientServerNotification` and routes it to the appropriate handler.
@@ -279,6 +299,9 @@ impl Server {
             ClientServerNotificationVariant::DidChange(params) => self.handle_did_change(params),
             ClientServerNotificationVariant::DidOpen(document_sync) => {
                 self.handle_did_open(document_sync)
+            }
+            ClientServerNotificationVariant::DidClose(close_parameters) => {
+                self.handle_did_close(close_parameters)
             }
         }
         Ok(())
